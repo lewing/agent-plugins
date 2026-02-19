@@ -47,24 +47,40 @@ For **"what's the flow status for repo X?"** — use the Codeflow Overview:
 4. Check build freshness for relevant channels to rule out VMR build failures
 5. Check for open forward flow PRs into `dotnet/dotnet` from the repo — these can cause staleness blocks on backflow
 
-For **investigating a specific PR** — use PR Analysis (Step 1 below).
+For **investigating a specific PR** — use PR Analysis below. If **no open PR exists**, check `maestro_tracked_pr` for the subscription to see Maestro's view, then inspect the most recently merged matching PR to confirm flow is healthy.
 
 ## Codeflow Concepts
 
 - **Backflow** (VMR → product repo): Maestro creates PRs titled `[branch] Source code updates from dotnet/dotnet` in product repos (e.g., `dotnet/sdk`)
 - **Forward flow** (product repo → VMR): PRs titled `[branch] Source code updates from dotnet/<repo>` into `dotnet/dotnet`
 - **Staleness**: When forward flow merges while a backflow PR is open, Maestro blocks further updates
+- **VMR backflow vs dependency subscriptions**: Product repos receive two kinds of subscriptions. *VMR backflow* (source: `dotnet/dotnet`) carries source code sync + dependency updates. *Dependency subscriptions* (source: another product repo, e.g., `dotnet/hot-reload-test-framework`) carry only package version updates. Both target the same branch but have different failure patterns — don't confuse a stuck dependency subscription with a VMR backflow problem.
 
 ## Channel Resolution
 
 Users refer to channels with shorthand. **.NET major = year − 2015** (2026 → .NET 11, 2025 → .NET 10).
 
-| User says | Resolve to |
-|-----------|-----------|
-| `net11` | Filter `maestro_channels` for names containing `11.0` |
-| `11.0.1xx` | Use directly with build freshness or channel queries |
-| `release/10.0.3xx` | Strip `release/` → `10.0.3xx`, match channels |
-| `main` | Current dev branch (major = year − 2015, band = `1xx`) |
+| User says | Resolve to | Example exact channel name |
+|-----------|-----------|---------------------------|
+| `net11` | Filter channels for `11.0` | `.NET 11.0.1xx SDK` |
+| `11.0.1xx` | Use directly | `.NET 11.0.1xx SDK` |
+| `net10 3xx` | Version 10, band 3 | `.NET 10.0.3xx SDK` |
+| `release/10.0.3xx` | Strip `release/` → `10.0.3xx` | `.NET 10.0.3xx SDK` |
+| `main` | Current dev (major = year − 2015, band = `1xx`) | `.NET 11.0.1xx SDK` |
+
+> ⚠️ **Channel filter requires an exact substring match.** Use the full channel name (e.g., `.NET 11.0.1xx SDK`) when filtering `maestro_codeflow_prs` or `maestro_subscriptions`. Partial names like `.NET 11.0` may not match.
+
+### SDK Bands and Forward Flow
+
+The SDK band determines what flows where. The **1xx band** is the full source-build band; higher bands consume some components as prebuilt packages:
+
+| Band | VMR branch | runtime/aspnetcore forward flow? | Example |
+|------|-----------|----------------------------------|---------|
+| 1xx | `release/X.Y.1xx` or `main` | ✅ Yes — full source build | `.NET 11.0.1xx SDK` |
+| 2xx | `release/X.Y.2xx` | ❌ No — consumed as prebuilts from 1xx | `.NET 10.0.2xx SDK` |
+| 3xx | `release/X.Y.3xx` | ❌ No — consumed as prebuilts from 1xx | `.NET 10.0.3xx SDK` |
+
+**Missing runtime forward flow on a 2xx/3xx branch is expected, not broken.** Only SDK, roslyn, fsharp, nuget, and arcade have forward flow on higher bands.
 
 ## Analysis Modes
 
@@ -82,25 +98,44 @@ When the user asks "what codeflow PRs are active?" or "what's the flow status?",
 
 Check subscription health for the target repository. This shows which subscriptions are stale (behind on builds) and which are current.
 
+> ⚠️ **Output includes ALL subscriptions** (all branches and channels). For a version-specific query like "net11 status", filter the results for channels containing your target version (e.g., `11.0`) and the relevant branch (`main` for current dev).
+
 > ⚠️ **"Builds behind" compares last *merged* build vs latest available.** High numbers are a real problem — codeflow PRs can get stuck for weeks or months without merging. Cross-check with the tracked PR: if the PR is less than a day old, the number may just reflect normal processing lag. If the PR has been open for days, it's genuinely stuck and needs investigation.
 
-### Step 2: List Tracked PRs
+### Step 2: Check Forward Flow
+
+**Before drilling into backflow problems**, check for open forward flow PRs from the product repo into `dotnet/dotnet`. An open forward flow PR is the #1 cause of backflow staleness — if forward flow is pending, backflow is blocked by design.
+
+### Step 3: List Tracked PRs
 
 List all codeflow PRs currently tracked by Maestro, optionally filtering by channel name.
 
-> ⚠️ **Output is large** (200+ PRs across all repos). Filter by `channelName` parameter, or grep/search the output for your target repo.
+> ⚠️ **Output is large** (200+ PRs across all repos). Filter by `channelName` parameter (use exact name like `.NET 11.0.1xx SDK`), or grep/search the output for your target repo.
 
-### Step 3: Drill Into Problems
+### Step 4: Drill Into Problems
 
 For subscriptions that are stale — whether they have a stuck PR or no PR at all:
 - Check the subscription's update history to find the failure point
 - Check build freshness to rule out VMR build failures (if builds are stale, it's a VMR issue, not Maestro)
-- Check for open forward flow PRs from the product repo into `dotnet/dotnet` — an open forward flow PR can block backflow
 - For stuck PRs, check the PR's age and recent activity — a PR open >3 days with no progress needs attention
 
-### Step 4: Enrich with GitHub Data
+### Step 5: Enrich with GitHub Data
 
 Use GitHub PR details to check state, comments, and merge status for any PRs flagged as problematic.
+
+### Multi-Repo Health Check
+
+When asked about flow health across "all repos" or a major version (e.g., "net11 status"), check the core product repos. Subscription health calls are independent — run them in parallel.
+
+**Core repos**: `dotnet/runtime`, `dotnet/sdk`, `dotnet/aspnetcore`, `dotnet/roslyn`, `dotnet/efcore`, `dotnet/winforms`, `dotnet/wpf`, `dotnet/msbuild`
+
+**Branch names differ across repos** for the same .NET version:
+- `runtime`, `aspnetcore`, `efcore`, `winforms`, `wpf` → `release/X.0` (e.g., `release/10.0`)
+- `sdk`, `msbuild` → `release/X.0.Nxx` (e.g., `release/10.0.1xx`, `release/10.0.3xx`)
+- `roslyn` → `release/devNN.0` (e.g., `release/dev18.0` for .NET 10)
+- Current dev for all → `main`
+
+When asked about a major version, check **all branches** — don't ask for clarification. Present a consolidated cross-repo summary.
 
 ## PR Analysis Workflow
 
@@ -112,9 +147,13 @@ Read the PR details and extract codeflow metadata from the body:
 - **VMR commit SHA** — the `**Commit**:` field (snapshot this PR is based on)
 - **VMR branch** — the `**Branch**:` field
 
-### Step 2: Check Subscription Health and History
+> 💡 **No open PR?** If no open backflow PR exists for the target branch, check `maestro_tracked_pr` for the subscription to see if Maestro is tracking one. If not, inspect the most recently merged matching PR to confirm flow completed successfully. A missing PR with a healthy subscription means flow is working normally.
+
+### Step 2: Check Subscription Health, History, and Forward Flow
 
 Check the subscription's health status to assess whether Maestro is processing builds for this flow.
+
+**Check forward flow first**: Search for open forward flow PRs from the product repo into `dotnet/dotnet` targeting the same VMR branch. An open forward flow PR blocks backflow updates — this is the most common cause of staleness.
 
 Then check the subscription's update history to see the timeline of build applications — this shows when each build was processed, whether it succeeded, and what PR was created/updated. Use this to answer "when did this subscription get stuck?" or "was there a failed attempt?"
 
@@ -181,13 +220,6 @@ Combine script output (GitHub PR state) + MCP data (Maestro health) to produce t
 - If one branch is `missing` but builds are fresh → Maestro is stuck, suggest triggering
 - If a branch has `status: "conflict"` → suggest `darc vmr resolve-conflict`
 
-> ⚠️ **Branch names differ across repos.** When the user says "net10":
-> - `runtime`, `aspnetcore`, `efcore`, `winforms`, `wpf` → `release/10.0`
-> - `sdk`, `msbuild` → `release/10.0.1xx` (or `10.0.2xx`, `10.0.3xx`)
-> - `roslyn` → `release/dev18.0`
->
-> When asked about a major version, check **all branches** — don't ask for clarification.
-
 ## Interpreting Results
 
 ### Current State
@@ -205,10 +237,11 @@ Combine script output (GitHub PR state) + MCP data (Maestro health) to produce t
 - **`subscription-missing`**: No subscription exists — expected for shipped previews
 
 ### Subscription History Patterns
-- **`ApplyingUpdates` failure**: Maestro couldn't create or update the PR branch — typically a git conflict or API error
-- **`MergingPullRequest` failure**: PR exists but merge failed — usually CI checks blocking merge
-- **Alternating failures**: Normal retry behavior — Maestro retries on the next build
-- **Long gap with no entries**: Subscription may be disabled or channel has no new builds
+- **`ApplyingUpdates` failure**: Maestro couldn't create or update the PR branch — typically a git conflict or API error. If this is a one-off, Maestro will retry on the next build.
+- **`MergingPullRequest` failure**: PR exists but merge failed — usually CI checks blocking auto-merge, or branch protection rules preventing the merge.
+- **Alternating `ApplyingUpdates` / `MergingPullRequest` failures**: A chronic pattern spanning weeks or months indicates a systemic problem — not normal retry. Usually means: (a) an unresolved conflict that recurs on each attempt, (b) persistently failing CI checks, or (c) a forward flow PR blocking backflow. Investigate the PR directly.
+- **Long gap with no entries**: Either the subscription is disabled, the channel has no new builds (check build freshness), or the subscription is on a `None` (manual) update frequency.
+- **Single old failure then silence**: Subscription may have been disabled after a failure, or the channel was frozen after a preview shipped. Check `maestro_subscription` for the enabled/disabled state.
 
 > ❌ **Never assume "Unknown" means healthy.** API failures produce Unknown status — exclude from positive counts.
 
