@@ -45,8 +45,8 @@ Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FO
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
 
-- **azure-devops** — `npx` tool
-- **hlx** — `dnx` tool
-- **maestro** — `dnx` tool
-- **mcp-binlog-tool** — `dnx` tool
-- **mihubot** — https://mihubot.xyz/mcp
+- **[azure-devops](plugin.json#L23)** — `npx` tool
+- **[hlx](plugin.json#L34)** — `dnx` tool
+- **[maestro](plugin.json#L41)** — `dnx` tool
+- **[mcp-binlog-tool](plugin.json#L48)** — `dnx` tool
+- **[mihubot](plugin.json#L55)** — https://mihubot.xyz/mcp
