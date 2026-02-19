@@ -18,8 +18,8 @@ A **plugin marketplace** for [Agent Skills](https://docs.github.com/en/copilot/c
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **dotnet-dnceng** | ci-analysis, vmr-codeflow-status | Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows |
+| **dotnet-dnceng** | ci-analysis, flow-analysis | Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows |
 | **lewing** | nuget-trusted-publishing | Personal skills by @lewing — skill development for Copilot CLI |
 
 ---
-*Auto-synced from source @ `0bb0ca4`*
+*Auto-synced from source @ `ad3e420`*

@@ -17,6 +17,44 @@
   ],
   "skills": [
     "skills/ci-analysis",
-    "skills/vmr-codeflow-status"
-  ]
+    "skills/flow-analysis"
+  ],
+  "mcpServers": {
+    "azure-devops": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp",
+        "dnceng-public"
+      ],
+      "env": {
+        "AZURE_DEVOPS_AUTH_METHOD": "azure-cli"
+      }
+    },
+    "hlx": {
+      "command": "dnx",
+      "args": [
+        "--yes",
+        "lewing.helix.mcp"
+      ]
+    },
+    "maestro": {
+      "command": "dnx",
+      "args": [
+        "--yes",
+        "lewing.maestro.mcp"
+      ]
+    },
+    "mcp-binlog-tool": {
+      "command": "dnx",
+      "args": [
+        "--yes",
+        "baronfel.binlog.mcp"
+      ]
+    },
+    "mihubot": {
+      "type": "http",
+      "url": "https://mihubot.xyz/mcp"
+    }
+  }
 }
