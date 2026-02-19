@@ -17,10 +17,10 @@ A **plugin marketplace** for [Agent Skills](https://docs.github.com/en/copilot/c
 ## Available Plugins
 
 | Plugin | Skills | Description |
-|--------|--------|-------------|| **dotnet-runtime** | code-review, jit-regression-test | Skills for dotnet/runtime development workflows: code review, JIT APIs, regression tests |
+|--------|--------|-------------|
+| **dotnet-runtime** | code-review, jit-regression-test | Skills for dotnet/runtime development workflows: code review, JIT APIs, regression tests |
 | **dotnet-dnceng** | ci-analysis, vmr-codeflow-status | Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows |
 | **lewing** | nuget-trusted-publishing | Personal skills by @lewing — skill development for Copilot CLI |
 
 ---
-*Auto-synced from source @ `ce0b45f`*
-
+*Auto-synced from source @ `986f946`*
