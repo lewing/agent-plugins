@@ -131,9 +131,11 @@ When asked about flow health across "all repos" or a major version (e.g., "net11
 
 **Branch names differ across repos** for the same .NET version:
 - `runtime`, `aspnetcore`, `efcore`, `winforms`, `wpf` → `release/X.0` (e.g., `release/10.0`)
-- `sdk`, `msbuild` → `release/X.0.Nxx` (e.g., `release/10.0.1xx`, `release/10.0.3xx`)
-- `roslyn` → `release/devNN.0` (e.g., `release/dev18.0` for .NET 10)
+- `sdk` → `release/X.0.Nxx` (e.g., `release/10.0.1xx`, `release/10.0.3xx`)
+- `msbuild` → `vsNN.N` branches (e.g., `vs18.0` for .NET 10, `vs17.14` for servicing). MSBuild follows VS version numbering.
+- `roslyn` → `release/devNN.0` (e.g., `release/dev18.0` for .NET 10). **Formula**: VS major = .NET major + 8.
 - Current dev for all → `main`
+- **Preview branches**: Some repos use `release/X.0-previewN` (e.g., `release/11.0-preview2`) or `release/X.0.1xx-previewN` during milestone development.
 
 When asked about a major version, check **all branches** — don't ask for clarification. Present a consolidated cross-repo summary.
 
@@ -166,6 +168,8 @@ Check PR comments for Maestro bot warnings:
 - **Conflict**: "Conflict detected" with file list
 
 Cross-reference with PR checks/mergeable status — if Codeflow verification passes or PR is mergeable, the issue may already be resolved.
+
+> 💡 **No open backflow PR to assess?** If the subscription is healthy and the most recently merged PR is recent, flow is working — Maestro will create a new PR when the next VMR build publishes. If the subscription is stale with no PR, check subscription history for the failure point.
 
 ### Step 4: Check Build Freshness
 
