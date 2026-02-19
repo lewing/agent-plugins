@@ -2,6 +2,12 @@
 
 Personal skills by @lewing — skill development for Copilot CLI
 
+## Installation
+
+```
+/plugin install lewing
+```
+
 ## Skills
 
 ### [nuget-trusted-publishing](skills/nuget-trusted-publishing/SKILL.md)

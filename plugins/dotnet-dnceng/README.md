@@ -2,6 +2,12 @@
 
 Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows
 
+## Installation
+
+```
+/plugin install dotnet-dnceng
+```
+
 ## Skills
 
 ### [ci-analysis](skills/ci-analysis/SKILL.md)

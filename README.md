@@ -6,7 +6,7 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 
 ## Installation
 
-```bash
+```
 /plugin marketplace add lewing/agent-plugins
 
 # Install a plugin
