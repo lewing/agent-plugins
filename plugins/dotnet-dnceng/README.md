@@ -4,7 +4,7 @@ Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and bu
 
 ## Skills
 
-### ci-analysis
+### [ci-analysis](skills/ci-analysis/SKILL.md)
 
 Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests".
 
@@ -18,7 +18,7 @@ Analyze CI build and test status from Azure DevOps and Helix for dotnet reposito
 - [manual-investigation.md](skills/ci-analysis/references/manual-investigation.md)
 - [sql-tracking.md](skills/ci-analysis/references/sql-tracking.md)
 
-### flow-analysis
+### [flow-analysis](skills/flow-analysis/SKILL.md)
 
 Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FOR: investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues, checking overall flow status for a repo, diagnosing why backflow PRs are missing or blocked, subscription health, build freshness, URLs containing dotnet-maestro or "Source code updates from dotnet/dotnet". DO NOT USE FOR: CI build failures (use ci-analysis skill), code review (use code-review skill), general PR investigation without codeflow context. INVOKES: maestro MCP tools (maestro_subscriptions, maestro_subscription_health, maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription), GitHub MCP tools (pull_request_read, get_file_contents, search_pull_requests), and Get-FlowHealth.ps1 script for batch flow health scanning.
 
