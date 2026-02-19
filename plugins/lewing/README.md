@@ -7,12 +7,14 @@ Personal skills by @lewing — skill development for Copilot CLI
 Inside Copilot CLI:
 ```
 /plugin install lewing/agent-plugins:plugins/lewing
+/plugin update lewing
 /plugin uninstall lewing
 ```
 
 From the terminal:
 ```
 copilot plugin install lewing/agent-plugins:plugins/lewing
+copilot plugin update lewing
 copilot plugin uninstall lewing
 ```
 

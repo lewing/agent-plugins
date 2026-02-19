@@ -9,12 +9,14 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 Inside Copilot CLI:
 ```
 /plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+/plugin update dotnet-dnceng
 /plugin uninstall dotnet-dnceng
 ```
 
 From the terminal:
 ```
 copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+copilot plugin update dotnet-dnceng
 copilot plugin uninstall dotnet-dnceng
 ```
 
