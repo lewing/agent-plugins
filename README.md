@@ -15,7 +15,19 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 
 ## Available Plugins
 
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **dotnet-dnceng** | ci-analysis, flow-analysis | Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows |
-| **lewing** | nuget-trusted-publishing | Personal skills by @lewing — skill development for Copilot CLI |
+### [dotnet-dnceng](plugins/dotnet-dnceng/)
+
+Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows
+
+| Skill | References |
+|-------|------------|
+| ci-analysis | [azdo-helix-reference](plugins/dotnet-dnceng/skills/ci-analysis/references/azdo-helix-reference.md), [azure-cli](plugins/dotnet-dnceng/skills/ci-analysis/references/azure-cli.md), [binlog-comparison](plugins/dotnet-dnceng/skills/ci-analysis/references/binlog-comparison.md), [build-progression-analysis](plugins/dotnet-dnceng/skills/ci-analysis/references/build-progression-analysis.md), [delegation-patterns](plugins/dotnet-dnceng/skills/ci-analysis/references/delegation-patterns.md), [helix-artifacts](plugins/dotnet-dnceng/skills/ci-analysis/references/helix-artifacts.md), [manual-investigation](plugins/dotnet-dnceng/skills/ci-analysis/references/manual-investigation.md), [sql-tracking](plugins/dotnet-dnceng/skills/ci-analysis/references/sql-tracking.md) |
+| flow-analysis | [vmr-build-topology](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-build-topology.md), [vmr-codeflow-reference](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-codeflow-reference.md) |
+
+### [lewing](plugins/lewing/)
+
+Personal skills by @lewing — skill development for Copilot CLI
+
+| Skill | References |
+|-------|------------|
+| nuget-trusted-publishing | [package-types](plugins/lewing/skills/nuget-trusted-publishing/references/package-types.md), [publish-workflow](plugins/lewing/skills/nuget-trusted-publishing/references/publish-workflow.md) |
