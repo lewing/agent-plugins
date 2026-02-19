@@ -22,6 +22,11 @@ Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
 /plugin install lewing/agent-plugins:plugins/dotnet-dnceng
 ```
 
+To uninstall a plugin:
+```
+copilot plugin uninstall dotnet-dnceng
+```
+
 ## Available Plugins
 
 ### [dotnet-dnceng](plugins/dotnet-dnceng/)

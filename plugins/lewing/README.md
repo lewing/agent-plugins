@@ -20,6 +20,11 @@ Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
 /plugin install lewing/agent-plugins:plugins/lewing
 ```
 
+To uninstall:
+```
+copilot plugin uninstall lewing
+```
+
 ## Skills
 
 ### [nuget-trusted-publishing](skills/nuget-trusted-publishing/SKILL.md)
