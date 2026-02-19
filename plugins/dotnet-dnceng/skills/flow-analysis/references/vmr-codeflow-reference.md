@@ -126,6 +126,49 @@ Base URL: `https://maestro.dot.net`
 - Get builds: `GET /api/builds`
 - Get build by ID: `GET /api/builds/{id}`
 
+## VMR Backflow vs Dependency Subscriptions
+
+Product repos receive two kinds of subscriptions:
+- **VMR backflow** (source: `dotnet/dotnet`): Carries source code sync + dependency updates. PRs titled `[branch] Source code updates from dotnet/dotnet`.
+- **Dependency subscriptions** (source: another product repo, e.g., `dotnet/hot-reload-test-framework`): Carry only package version updates.
+
+Both target the same branch but have different failure patterns — don't confuse a stuck dependency subscription with a VMR backflow problem.
+
+## Branch Naming per Repo
+
+Different repos use different branch naming conventions for the same .NET version:
+
+| Repo group | Branch pattern | Example (.NET 10) |
+|-----------|---------------|-------------------|
+| `runtime`, `aspnetcore`, `efcore`, `winforms`, `wpf` | `release/X.0` | `release/10.0` |
+| `sdk` | `release/X.0.Nxx` | `release/10.0.1xx`, `release/10.0.3xx` |
+| `msbuild` | `vsNN.N` (VS version numbering) | `vs18.0` (.NET 10), `vs17.14` (servicing) |
+| `roslyn` | `release/devNN.0` | `release/dev18.0` (.NET 10). **Formula**: VS major = .NET major + 8. |
+| Current dev (all repos) | `main` | `main` |
+| **Preview** | `release/X.0-previewN` or `release/X.0.1xx-previewN` | `release/11.0-preview2` |
+
+## SDK Bands and Forward Flow
+
+The SDK band determines what flows where. The **1xx band** is the full source-build band; higher bands consume some components as prebuilt packages:
+
+| Band | VMR branch | runtime/aspnetcore forward flow? | Example |
+|------|-----------|----------------------------------|---------|
+| 1xx | `release/X.Y.1xx` or `main` | ✅ Yes — full source build | `.NET 11.0.1xx SDK` |
+| 2xx | `release/X.Y.2xx` | ❌ No — consumed as prebuilts from 1xx | `.NET 10.0.2xx SDK` |
+| 3xx | `release/X.Y.3xx` | ❌ No — consumed as prebuilts from 1xx | `.NET 10.0.3xx SDK` |
+
+**Missing runtime forward flow on a 2xx/3xx branch is expected, not broken.** Only SDK, roslyn, fsharp, nuget, and arcade have forward flow on higher bands.
+
+## Subscription History Patterns
+
+When checking `maestro_subscription_history`, these patterns indicate specific problems:
+
+- **`ApplyingUpdates` failure**: Maestro couldn't create or update the PR branch — typically a git conflict or API error. If this is a one-off, Maestro will retry on the next build.
+- **`MergingPullRequest` failure**: PR exists but merge failed — usually CI checks blocking auto-merge, or branch protection rules preventing the merge.
+- **Alternating `ApplyingUpdates` / `MergingPullRequest` failures**: A chronic pattern spanning weeks or months indicates a systemic problem — not normal retry. Usually means: (a) an unresolved conflict that recurs on each attempt, (b) persistently failing CI checks, or (c) a forward flow PR blocking backflow. Investigate the PR directly.
+- **Long gap with no entries**: Either the subscription is disabled, the channel has no new builds (check build freshness), or the subscription is on a `None` (manual) update frequency.
+- **Single old failure then silence**: Subscription may have been disabled after a failure, or the channel was frozen after a preview shipped. Check `maestro_subscription` for the enabled/disabled state.
+
 ## Common Scenarios
 
 ### 1. Codeflow is stale — a fix landed but hasn't reached the PR

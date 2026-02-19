@@ -77,6 +77,7 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 }
 
 # --- Search for codeflow PRs ---
+Write-Host "🔍 Searching for codeflow PRs in $Repository..." -ForegroundColor Cyan
 $openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>$null
 $openPRs = @()
 if ($LASTEXITCODE -eq 0 -and $openPRsJson) {
@@ -88,6 +89,8 @@ $mergedPRs = @()
 if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {
     try { $mergedPRs = ($mergedPRsJson -join "`n") | ConvertFrom-Json } catch { $mergedPRs = @() }
 }
+
+Write-Host "  ✅ Found $($openPRs.Count) open, $($mergedPRs.Count) merged codeflow PRs" -ForegroundColor Green
 
 # --- Map open PRs by branch ---
 $openBranches = @{}
@@ -111,6 +114,7 @@ foreach ($mpr in $mergedPRs) {
 }
 
 # --- Parallel fetch: PR bodies for merged PRs (extract VMR metadata) ---
+Write-Host "📦 Fetching PR metadata and VMR branch data..." -ForegroundColor Cyan
 $prBodyJobs = @{}
 foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
     if ($openBranches.ContainsKey($branchName)) { continue }
@@ -146,6 +150,7 @@ foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
 }
 
 # --- Parallel fetch: VMR branch HEADs ---
+Write-Host "🔗 Comparing VMR branch HEADs..." -ForegroundColor Cyan
 $vmrHeadJobs = @{}
 foreach ($branchName in $vmrBranches.Keys) {
     if (-not $vmrCommits.ContainsKey($branchName)) { continue }
@@ -227,6 +232,7 @@ foreach ($branchName in $compareJobs.Keys) {
 }
 
 # --- Forward flow scan ---
+Write-Host "↔️ Scanning forward flow PRs..." -ForegroundColor Cyan
 $repoShortName = $Repository -replace '^dotnet/', ''
 $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
 $fwdPRs = @()
@@ -385,6 +391,16 @@ $output = [ordered]@{
             conflicted = $fwdConflict
         }
     }
+}
+
+# --- Summary ---
+$totalBranches = $backflowBranches.Count
+$totalFwd = $forwardFlowPRs.Count
+$problemCount = $blocked + $missing
+if ($problemCount -eq 0 -and $fwdStale -eq 0 -and $fwdConflict -eq 0) {
+    Write-Host "✅ $Repository: $totalBranches branches healthy, $totalFwd forward flow PRs" -ForegroundColor Green
+} else {
+    Write-Host "⚠️ $Repository: $problemCount backflow issues ($blocked blocked, $missing missing), $($fwdStale + $fwdConflict) forward flow issues" -ForegroundColor Yellow
 }
 
 # Output as JSON for the agent to consume
