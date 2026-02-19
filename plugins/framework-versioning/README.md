@@ -30,4 +30,6 @@ Perform the .NET major version bump (e.g., net11 to net12) in any dotnet repo. U
 
 ## Agents
 
-- [TfmVersionUpgrade](agents/TfmVersionUpgrade.agent.md)
+### [TfmVersionUpgrade](agents/TfmVersionUpgrade.agent.md)
+
+An agent that orchestrates the full .NET major version bump process across a repository. Drives discovery, updates, verification, and PR creation with human gates between phases. Uses the tfm-version-upgrade skill for domain knowledge.
