@@ -4,25 +4,22 @@ Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and bu
 
 ## Installation
 
-Via marketplace:
+Inside Copilot CLI:
+```
+/plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+/plugin uninstall dotnet-dnceng
+```
+
+From the terminal:
+```
+copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+copilot plugin uninstall dotnet-dnceng
+```
+
+Or via marketplace:
 ```
 copilot plugin marketplace add lewing/agent-plugins
 copilot plugin install dotnet-dnceng@lewing-public-skills
-```
-
-Or directly from GitHub:
-```
-copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
-```
-
-Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
-```
-/plugin install lewing/agent-plugins:plugins/dotnet-dnceng
-```
-
-To uninstall:
-```
-copilot plugin uninstall dotnet-dnceng
 ```
 
 ## Skills
