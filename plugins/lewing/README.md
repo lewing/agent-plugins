@@ -26,3 +26,7 @@ Set up NuGet trusted publishing (OIDC) on a GitHub Actions repo — replaces lon
 **References:**
 - [package-types.md](skills/nuget-trusted-publishing/references/package-types.md)
 - [publish-workflow.md](skills/nuget-trusted-publishing/references/publish-workflow.md)
+
+### [stealth-squad](skills/stealth-squad/SKILL.md)
+
+Set up a stealth Squad on any repo without modifying tracked files — side-repo + symlinks + git exclude. USE FOR: stealth Squad, hidden Squad, Squad without committing, Squad on a repo I don't own, Squad symlink setup, try Squad without touching repo, consulting Squad. DO NOT USE FOR: normal Squad setup (just run npx github:bradygaster/squad directly), using Squad after setup (just use @squad agent).

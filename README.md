@@ -6,17 +6,45 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 
 ## Installation
 
+### Claude Code
+
 Via marketplace (supports updates):
 ```
 /plugin marketplace add lewing/agent-plugins
-/plugin install dotnet-dnceng@lewing-public
-/plugin update dotnet-dnceng@lewing-public
-/plugin uninstall dotnet-dnceng@lewing-public
+# Browse available plugins
+/plugin   # → go to Discover tab
+/plugin install <plugin-name>@lewing-public
+/plugin update <plugin-name>@lewing-public
+/plugin uninstall <plugin-name>@lewing-public
 ```
 
 Or install directly from GitHub:
 ```
-/plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+/plugin install lewing/agent-plugins:plugins/<plugin-name>
+```
+
+### GitHub Copilot CLI
+
+Via marketplace:
+```
+/plugin marketplace add lewing/agent-plugins
+/plugin marketplace browse lewing-public
+/plugin install <plugin-name>@lewing-public
+/plugin update <plugin-name>@lewing-public
+/plugin uninstall <plugin-name>@lewing-public
+/plugin list
+```
+
+Or install directly from GitHub:
+```
+/plugin install lewing/agent-plugins:plugins/<plugin-name>
+```
+
+List and manage installed skills:
+```
+/skills list
+/skills        # toggle on/off with arrow keys + spacebar
+/skills reload # pick up newly added skills
 ```
 
 ## Available Plugins
@@ -46,3 +74,4 @@ Personal skills by @lewing — skill development for Copilot CLI
 | Skill | References |
 |-------|------------|
 | [nuget-trusted-publishing](plugins/lewing/skills/nuget-trusted-publishing/SKILL.md) | [package-types](plugins/lewing/skills/nuget-trusted-publishing/references/package-types.md), [publish-workflow](plugins/lewing/skills/nuget-trusted-publishing/references/publish-workflow.md) |
+| [stealth-squad](plugins/lewing/skills/stealth-squad/SKILL.md) |  |
