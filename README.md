@@ -30,6 +30,14 @@ Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and bu
 | [ci-analysis](plugins/dotnet-dnceng/skills/ci-analysis/SKILL.md) | [azdo-helix-reference](plugins/dotnet-dnceng/skills/ci-analysis/references/azdo-helix-reference.md), [azure-cli](plugins/dotnet-dnceng/skills/ci-analysis/references/azure-cli.md), [binlog-comparison](plugins/dotnet-dnceng/skills/ci-analysis/references/binlog-comparison.md), [build-progression-analysis](plugins/dotnet-dnceng/skills/ci-analysis/references/build-progression-analysis.md), [delegation-patterns](plugins/dotnet-dnceng/skills/ci-analysis/references/delegation-patterns.md), [helix-artifacts](plugins/dotnet-dnceng/skills/ci-analysis/references/helix-artifacts.md), [manual-investigation](plugins/dotnet-dnceng/skills/ci-analysis/references/manual-investigation.md), [sql-tracking](plugins/dotnet-dnceng/skills/ci-analysis/references/sql-tracking.md) |
 | [flow-analysis](plugins/dotnet-dnceng/skills/flow-analysis/SKILL.md) | [vmr-build-topology](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-build-topology.md), [vmr-codeflow-reference](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-codeflow-reference.md) |
 
+### [framework-versioning](plugins/framework-versioning/)
+
+Skills and agents for .NET major version bumps: TFM updates, workload manifest creation, and version property management
+
+| Skill | References |
+|-------|------------|
+| [tfm-version-upgrade](plugins/framework-versioning/skills/tfm-version-upgrade/SKILL.md) | [version-bump-instructions](plugins/framework-versioning/skills/tfm-version-upgrade/references/version-bump-instructions.md), [workload-manifest-patterns](plugins/framework-versioning/skills/tfm-version-upgrade/references/workload-manifest-patterns.md), [workload-version-bump-instructions](plugins/framework-versioning/skills/tfm-version-upgrade/references/workload-version-bump-instructions.md) |
+
 ### [lewing](plugins/lewing/)
 
 Personal skills by @lewing — skill development for Copilot CLI

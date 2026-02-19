@@ -1,0 +1,33 @@
+# framework-versioning
+
+Skills and agents for .NET major version bumps: TFM updates, workload manifest creation, and version property management
+
+## Installation
+
+Via marketplace (supports updates):
+```
+/plugin marketplace add lewing/agent-plugins
+/plugin install framework-versioning@lewing-public
+/plugin update framework-versioning@lewing-public
+/plugin uninstall framework-versioning@lewing-public
+```
+
+Or install directly from GitHub:
+```
+/plugin install lewing/agent-plugins:plugins/framework-versioning
+```
+
+## Skills
+
+### [tfm-version-upgrade](skills/tfm-version-upgrade/SKILL.md)
+
+Perform the .NET major version bump (e.g., net11 to net12) in any dotnet repo. Use when asked to "update TFMs", "create workload manifest for new version", "update from netN to netN+1", or "create frozen manifest". Covers eng/Versions.props, Directory.Build.props, workload manifests, templates, test assets, and documentation.
+
+**References:**
+- [version-bump-instructions.md](skills/tfm-version-upgrade/references/version-bump-instructions.md)
+- [workload-manifest-patterns.md](skills/tfm-version-upgrade/references/workload-manifest-patterns.md)
+- [workload-version-bump-instructions.md](skills/tfm-version-upgrade/references/workload-version-bump-instructions.md)
+
+## Agents
+
+- [TfmVersionUpgrade](agents/TfmVersionUpgrade.agent.md)
