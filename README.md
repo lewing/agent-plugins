@@ -11,16 +11,15 @@ A **plugin marketplace** for [Agent Skills](https://docs.github.com/en/copilot/c
 /plugin marketplace add lewing/agent-plugins
 
 # Install a plugin
-/plugin install dotnet-runtime@lewing-public-skills
+/plugin install dotnet-dnceng@lewing-public-skills
 ```
 
 ## Available Plugins
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **dotnet-runtime** | code-review, jit-regression-test | Skills for dotnet/runtime development workflows: code review, JIT APIs, regression tests |
 | **dotnet-dnceng** | ci-analysis, vmr-codeflow-status | Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows |
 | **lewing** | nuget-trusted-publishing | Personal skills by @lewing — skill development for Copilot CLI |
 
 ---
-*Auto-synced from source @ `986f946`*
+*Auto-synced from source @ `0bb0ca4`*
