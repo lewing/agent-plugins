@@ -1,0 +1,19 @@
+{
+  "name": "dotnet-runtime",
+  "version": "0.1.0",
+  "description": "Skills for dotnet/runtime development workflows: code review, JIT APIs, regression tests",
+  "author": {
+    "name": "Blazor-Playground"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "runtime",
+    "code-review",
+    "jit"
+  ],
+  "skills": [
+    "skills/code-review",
+    "skills/jit-regression-test"
+  ]
+}

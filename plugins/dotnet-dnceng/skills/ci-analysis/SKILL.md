@@ -1,0 +1,110 @@
+---
+name: ci-analysis
+description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests".
+---
+
+# Azure DevOps and Helix CI Analysis
+
+Analyze CI build status and test failures in Azure DevOps and Helix for dotnet repositories (runtime, sdk, aspnetcore, roslyn, and more).
+
+> 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
+
+**Workflow**: Gather PR context (Step 0) → run the script → read human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations. The script collects data; you generate the advice. MCP tools (AzDO, Helix, GitHub) provide supplementary access when available; the script and `gh` CLI work independently when they're not.
+
+## When to Use This Skill
+
+- Checking CI status ("is CI passing?", "why is CI red?")
+- Investigating CI failures or determining merge readiness
+- Debugging Helix test issues or build errors
+- URLs containing `dev.azure.com`, `helix.dot.net`, or GitHub PR links with failing checks
+- Questions like "retry CI", "rerun tests", "test failures", "checks failing"
+- Investigating canceled or timed-out jobs for recoverable results
+
+**Not for**: GitHub Actions workflows, non-Helix repos, or build performance (use binlog analysis).
+
+## Quick Start
+
+```powershell
+# Analyze PR failures (most common) - defaults to dotnet/runtime
+./scripts/Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
+
+# Analyze by build ID
+./scripts/Get-CIStatus.ps1 -BuildId 1276327 -ShowLogs
+
+# Query specific Helix work item
+./scripts/Get-CIStatus.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
+
+# Other dotnet repositories
+./scripts/Get-CIStatus.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+```
+
+For full parameter reference and mode details, see [references/script-modes.md](references/script-modes.md).
+
+## Step 0: Gather Context (before running anything)
+
+Context changes how you interpret every failure. **Don't skip this.**
+
+1. **Read PR metadata** — title, description, author, labels, linked issues
+2. **Classify the PR type**:
+
+| PR Type | How to detect | Interpretation shift |
+|---------|--------------|---------------------|
+| **Code PR** | Human author, code changes | Failures likely relate to the changes |
+| **Flow/Codeflow PR** | Author is `dotnet-maestro[bot]`, "Update dependencies" | Missing packages may be behavioral, not infrastructure |
+| **Backport** | Title mentions "backport", targets release branch | Check if test exists on target branch |
+| **Merge PR** | Merging between branches | Conflicts cause failures, not individual changes |
+| **Dependency update** | Bumps package versions, global.json | Build failures often trace to the dependency |
+
+3. **Check existing comments** — has someone already diagnosed failures or is a retry pending?
+4. **Note the changed files** — you'll use these for correlation after the script runs
+
+## After the Script: Analyze and Recommend
+
+After the script runs, follow the detailed workflow in [references/analysis-workflow.md](references/analysis-workflow.md). Key principles:
+
+1. **Cross-reference failures with known issues** — The script outputs `failedJobDetails` and `knownIssues` as separate lists. You must explicitly match each failure to a known issue (by error message, test name, or job type) or mark it **unmatched**. Don't present them as two independent lists — the user needs a per-failure verdict.
+2. **Check Build Analysis status** — Green = all failures matched known issues. Red = some unmatched. Never claim "all known issues" when Build Analysis is red.
+3. **Correlate with PR changes** — same files failing = likely PR-related.
+4. **Verify before claiming** — don't call it "infrastructure" without Build Analysis match or target-branch verification. Don't call it "safe to retry" unless ALL failures are accounted for.
+
+For interpreting error categories, crash recovery, and canceled jobs: [references/failure-interpretation.md](references/failure-interpretation.md)
+
+For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/recommendation-generation.md](references/recommendation-generation.md)
+
+## Anti-Patterns
+
+> ❌ **Don't label failures "infrastructure" without evidence.** Requires: Build Analysis match, identical failure on target branch, or confirmed outage. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
+
+> ❌ **Don't dismiss timed-out builds.** A build "failed" due to AzDO timeout can have 100% passing Helix work items. Check `hlx_status` before concluding failure.
+
+> ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs request *different* packages. Check *which* package and *why* before assuming feed delay.
+
+> ❌ **Don't present failures and known issues as separate lists.** Cross-reference them: for each `failedJobDetails` entry, state whether it matches a `knownIssues` entry or is unmatched. An `unclassified` failure can still match a known issue by error pattern.
+
+> ❌ **Don't say "safe to retry" with Build Analysis red.** Map each failing job to a specific known issue first.
+
+## References
+
+- **Script modes & parameters**: [references/script-modes.md](references/script-modes.md)
+- **Failure interpretation**: [references/failure-interpretation.md](references/failure-interpretation.md)
+- **Recommendation generation**: [references/recommendation-generation.md](references/recommendation-generation.md)
+- **Analysis workflow (Steps 1–3)**: [references/analysis-workflow.md](references/analysis-workflow.md)
+- **Helix artifacts & binlogs**: [references/helix-artifacts.md](references/helix-artifacts.md)
+- **Binlog comparison**: [references/binlog-comparison.md](references/binlog-comparison.md)
+- **Build progression analysis**: [references/build-progression-analysis.md](references/build-progression-analysis.md)
+- **Subagent delegation**: [references/delegation-patterns.md](references/delegation-patterns.md)
+- **Azure CLI investigation**: [references/azure-cli.md](references/azure-cli.md)
+- **Manual investigation**: [references/manual-investigation.md](references/manual-investigation.md)
+- **SQL tracking**: [references/sql-tracking.md](references/sql-tracking.md)
+- **AzDO/Helix details**: [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
+
+## Tips
+
+1. Check if same test fails on target branch before assuming transient
+2. Look for `[ActiveIssue]` attributes for known skipped tests
+3. Use `-SearchMihuBot` for semantic search of related issues
+4. `gh pr checks --json` fields: `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow` — `state` has `SUCCESS`/`FAILURE` directly (no `conclusion` field)
+5. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results
+6. **Use `initial_wait: 60` (or more) when running `Get-CIStatus.ps1`** — the script completes in 12-25s. Insufficient wait causes timeout→poll loops that waste 3-7 extra tool calls
+7. **Search the output file, don't re-query** — after the script writes large output to a temp file, use `Select-String` or `grep` to find specific patterns (test names, error codes, Helix URLs). Do NOT re-run the script or make individual API calls for data already in the output
+8. **Use the JSON `knownIssues` field directly** — the `[CI_ANALYSIS_SUMMARY]` JSON already maps failures to known GitHub issues. Use this data rather than separately searching `gh issue list --label "Known Build Error"`

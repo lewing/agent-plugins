@@ -1,0 +1,14 @@
+{
+  "name": "lewing",
+  "version": "0.1.0",
+  "description": "Personal skills by @lewing — skill development for Copilot CLI",
+  "author": {
+    "name": "lewing",
+    "url": "https://github.com/lewing"
+  },
+  "license": "MIT",
+  "keywords": null,
+  "skills": [
+    "skills/nuget-trusted-publishing"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "dotnet-dnceng",
+  "version": "0.1.0",
+  "description": "Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows",
+  "author": {
+    "name": "Blazor-Playground"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "dnceng",
+    "ci",
+    "vmr",
+    "codeflow",
+    "helix",
+    "azure-devops"
+  ],
+  "skills": [
+    "skills/ci-analysis",
+    "skills/vmr-codeflow-status"
+  ]
+}
