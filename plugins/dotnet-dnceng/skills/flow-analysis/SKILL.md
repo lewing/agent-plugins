@@ -10,7 +10,9 @@ description: >
   DO NOT USE FOR: CI build failures (use ci-analysis skill), code review
   (use code-review skill), general PR investigation without codeflow context.
   INVOKES: maestro MCP tools (maestro_subscriptions, maestro_subscription_health,
-  maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription),
+  maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription,
+  maestro_codeflow_prs, maestro_tracked_pr, maestro_backflow_status,
+  maestro_subscription_history),
   GitHub MCP tools (pull_request_read, get_file_contents, search_pull_requests),
   and Get-FlowHealth.ps1 script for batch flow health scanning.
 ---
@@ -55,14 +57,15 @@ Users refer to channels with shorthand. Resolve to Maestro channel queries using
 
 The version formula: **.NET major = year − 2015** (2026 → .NET 11, 2025 → .NET 10). When ambiguous, call `maestro_channels` and let the user pick.
 
-## Two Analysis Modes
+## Three Analysis Modes
 
 | Mode | Use When | Approach |
 |------|----------|----------|
-| **PR analysis** | Investigating a specific codeflow PR | MCP tools only — read PR → extract metadata → check subscription health → assess freshness |
+| **PR analysis** | Investigating a specific codeflow PR | MCP tools only — read PR → extract metadata → check subscription health → check history → assess freshness |
+| **Codeflow overview** | "What codeflow PRs are active?" | `maestro_codeflow_prs` — lists all tracked PRs with subscription metadata in one call |
 | **Flow health** | Checking overall repo flow status | Script + MCP — `Get-FlowHealth.ps1` for batch GitHub scanning, maestro MCP for subscription/build data |
 
-> 💡 **Why a script for flow health?** Scanning all branches requires 10-30+ parallel GitHub API calls (PR searches, body fetches, VMR HEAD lookups, commit comparisons). The script fires these in parallel using `Start-ThreadJob`; sequential MCP calls would be prohibitively slow.
+> 💡 **New in maestro.mcp v0.4.0**: `maestro_codeflow_prs` provides a single-call view of all active codeflow PRs tracked by Maestro. For many questions ("what's the flow status?"), start here before falling back to the script.
 
 ## PR Analysis Workflow
 
@@ -74,9 +77,13 @@ Read the PR details and extract codeflow metadata from the body:
 - **VMR commit SHA** — the `**Commit**:` field (snapshot this PR is based on)
 - **VMR branch** — the `**Branch**:` field
 
-### Step 2: Check Subscription Health
+### Step 2: Check Subscription Health and History
 
-Query `maestro_subscription` with the subscription ID to assess whether Maestro is processing builds for this flow.
+Check the subscription's health status to assess whether Maestro is processing builds for this flow.
+
+Then check the subscription's update history to see the timeline of build applications — this shows when each build was processed, whether it succeeded, and what PR was created/updated. Use this to answer "when did this subscription get stuck?" or "was there a failed attempt?"
+
+You can also look up the tracked PR for a subscription to confirm Maestro's view of the active PR — this is faster than searching GitHub if you just need to confirm what Maestro is tracking.
 
 ### Step 3: Assess PR State
 
@@ -96,9 +103,30 @@ To check if a specific fix has reached the PR:
 1. Read `src/source-manifest.json` from the VMR at the PR's snapshot commit — find the product repo's `commitSha`
 2. Check if the fix commit is an ancestor of that SHA
 
+## Codeflow Overview Workflow
+
+When the user asks "what codeflow PRs are active?" or "what's the flow status?", start by listing tracked codeflow PRs:
+
+### Step 1: List Tracked PRs
+
+List all codeflow PRs currently tracked by Maestro, optionally filtering by channel name.
+
+### Step 2: Drill Into Specific PRs
+
+For any PR that looks problematic:
+- Check the tracked PR details for a specific subscription
+- For a VMR build, check its backflow status to see which backflow PRs it produced
+- Check the subscription's update history to see the timeline of build applications
+
+### Step 3: Enrich with GitHub Data
+
+Use GitHub PR details to check state, comments, and merge status for any PRs flagged as problematic.
+
 ## Flow Health Workflow (Script + MCP)
 
 Flow health scanning uses a **hybrid approach**: the `Get-FlowHealth.ps1` script handles batch GitHub API calls in parallel, while maestro MCP tools provide subscription and build freshness data.
+
+> 💡 **Why a script for flow health?** Scanning all branches requires 10-30+ parallel GitHub API calls (PR searches, body fetches, VMR HEAD lookups, commit comparisons). The script fires these in parallel using `Start-ThreadJob`; sequential MCP calls would be prohibitively slow.
 
 ### Step 1: Run the Script
 
@@ -118,13 +146,17 @@ The script outputs structured JSON with:
 
 ### Step 2: Enrich with Maestro MCP Data
 
-After the script runs, use maestro MCP tools to add subscription and build context:
+After the script runs, enrich with maestro data:
 
-1. **Build freshness**: For each `vmrBranch` found in the script output, call `maestro_build_freshness` with the channel short name to check if official VMR builds are healthy.
+1. **Build freshness**: For each `vmrBranch` found in the script output, check build freshness with the channel short name to verify official VMR builds are healthy.
 
-2. **Subscription health**: For branches with `status: "missing"`, call `maestro_subscription_health` with `targetRepository` to diagnose *why* — is the subscription stuck, disabled, or is the channel frozen?
+2. **Subscription health**: For branches with `status: "missing"`, check subscription health for the target repository to diagnose *why* — is the subscription stuck, disabled, or is the channel frozen?
 
-3. **Latest builds**: For stuck subscriptions, call `maestro_latest_build` to find the buildId needed for `maestro_trigger_subscription`.
+3. **Update history**: For stuck subscriptions, check the subscription's update history to see the timeline — when was the last successful application? Was there a failed attempt?
+
+4. **Tracked PRs**: Cross-reference script results with the codeflow PR list to see Maestro's view of tracked PRs — the script sees GitHub state while Maestro may have a different picture.
+
+5. **Latest builds**: For stuck subscriptions, find the latest build to get the buildId needed for triggering.
 
 ### Step 3: Synthesize
 
@@ -171,15 +203,17 @@ Check `isCodeflowPR` first — if the PR isn't from `dotnet-maestro[bot]`, skip 
 | STALE | Check warnings for what's blocking |
 | ACTIVE | Check freshness and warnings for nuance |
 
-### Remediation via MCP Tools
+### Remediation via Maestro
 
-| Action | MCP Tool | When |
-|--------|----------|------|
-| Trigger subscription | `maestro_trigger_subscription` | PR was closed or no PR exists |
-| Check latest build for trigger | `maestro_latest_build` | Need buildId for trigger |
-| Bypass cache after action | Any tool with `noCache: true` | After triggering, verify state changed |
+| Action | When |
+|--------|------|
+| Trigger subscription | PR was closed or no PR exists for an enabled subscription |
+| Check latest build for trigger | Need a buildId to trigger with |
+| Check subscription history | Diagnosing when a subscription got stuck or failed |
+| Check backflow status for a VMR build | Understanding which product repos received a VMR build |
+| Bypass cache after action | After triggering, verify state changed using noCache |
 
-> ⚠️ **Force trigger vs normal trigger**: `maestro_trigger_subscription` is a normal trigger. For force-trigger (overwrites existing PR branch), use `darc trigger-subscriptions --id <id> --force` via shell. The MCP server doesn't yet support force-trigger.
+> ⚠️ **Force trigger vs normal trigger**: The MCP trigger is a normal trigger. For force-trigger (overwrites existing PR branch), use `darc trigger-subscriptions --id <id> --force` via shell. The MCP server doesn't yet support force-trigger.
 
 ### Darc Commands (When MCP Insufficient)
 
