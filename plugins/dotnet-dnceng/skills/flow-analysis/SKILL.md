@@ -38,6 +38,17 @@ Use this skill when:
 - **Maestro MCP server** — must be configured (provides `maestro_*` tools). See [lewing/maestro.mcp](https://github.com/lewing/maestro.mcp) for setup.
 - **GitHub CLI (`gh`)** — must be installed and authenticated. Required by `Get-FlowHealth.ps1`.
 
+## Quick Start
+
+For **"what's the flow status for repo X?"** — use the Codeflow Overview:
+1. Check subscription health for the target repository to find stale subscriptions
+2. List tracked codeflow PRs (filter by channel name or grep for your repo — output includes all repos)
+3. For stale subscriptions with no tracked PR → check subscription history to find the failure point
+4. Check build freshness for relevant channels to rule out VMR build failures
+5. Check for open forward flow PRs into `dotnet/dotnet` from the repo — these can cause staleness blocks on backflow
+
+For **investigating a specific PR** — use PR Analysis (Step 1 below).
+
 ## Codeflow Concepts
 
 - **Backflow** (VMR → product repo): Maestro creates PRs titled `[branch] Source code updates from dotnet/dotnet` in product repos (e.g., `dotnet/sdk`)
@@ -46,26 +57,50 @@ Use this skill when:
 
 ## Channel Resolution
 
-Users refer to channels with shorthand. Resolve to Maestro channel queries using these rules:
+Users refer to channels with shorthand. **.NET major = year − 2015** (2026 → .NET 11, 2025 → .NET 10).
 
-| User says | Interpretation | How to resolve |
-|-----------|---------------|----------------|
-| `net11`, `net 11` | .NET 11 (latest band) | Call `maestro_channels`, filter names containing `11.0` |
-| `11.0.1xx` | Specific SDK band | Use directly with `maestro_build_freshness` or match against `maestro_channels` |
-| `release/10.0.3xx` | Branch name | Strip `release/` → `10.0.3xx`, match channels containing that |
-| `main` | Current dev branch | Major version = current year − 2015, band = `1xx` |
+| User says | Resolve to |
+|-----------|-----------|
+| `net11` | Filter `maestro_channels` for names containing `11.0` |
+| `11.0.1xx` | Use directly with build freshness or channel queries |
+| `release/10.0.3xx` | Strip `release/` → `10.0.3xx`, match channels |
+| `main` | Current dev branch (major = year − 2015, band = `1xx`) |
 
-The version formula: **.NET major = year − 2015** (2026 → .NET 11, 2025 → .NET 10). When ambiguous, call `maestro_channels` and let the user pick.
+## Analysis Modes
 
-## Three Analysis Modes
+| Question | Mode | Approach |
+|----------|------|----------|
+| "What's the flow status for X?" | **Codeflow overview** | Subscription health + codeflow PRs + build freshness |
+| "Why is this PR stale/blocked?" | **PR analysis** | Read PR → extract metadata → check subscription health/history → assess freshness |
+| "Full flow health report for X" | **Flow health** | `Get-FlowHealth.ps1` script for batch GitHub scanning + maestro enrichment |
 
-| Mode | Use When | Approach |
-|------|----------|----------|
-| **PR analysis** | Investigating a specific codeflow PR | MCP tools only — read PR → extract metadata → check subscription health → check history → assess freshness |
-| **Codeflow overview** | "What codeflow PRs are active?" | `maestro_codeflow_prs` — lists all tracked PRs with subscription metadata in one call |
-| **Flow health** | Checking overall repo flow status | Script + MCP — `Get-FlowHealth.ps1` for batch GitHub scanning, maestro MCP for subscription/build data |
+## Codeflow Overview Workflow
 
-> 💡 **New in maestro.mcp v0.4.0**: `maestro_codeflow_prs` provides a single-call view of all active codeflow PRs tracked by Maestro. For many questions ("what's the flow status?"), start here before falling back to the script.
+When the user asks "what codeflow PRs are active?" or "what's the flow status?", start by checking subscription health and listing tracked PRs:
+
+### Step 1: Check Subscription Health
+
+Check subscription health for the target repository. This shows which subscriptions are stale (behind on builds) and which are current.
+
+> ⚠️ **"Builds behind" compares last *merged* build vs latest available.** High numbers are a real problem — codeflow PRs can get stuck for weeks or months without merging. Cross-check with the tracked PR: if the PR is less than a day old, the number may just reflect normal processing lag. If the PR has been open for days, it's genuinely stuck and needs investigation.
+
+### Step 2: List Tracked PRs
+
+List all codeflow PRs currently tracked by Maestro, optionally filtering by channel name.
+
+> ⚠️ **Output is large** (200+ PRs across all repos). Filter by `channelName` parameter, or grep/search the output for your target repo.
+
+### Step 3: Drill Into Problems
+
+For subscriptions that are stale — whether they have a stuck PR or no PR at all:
+- Check the subscription's update history to find the failure point
+- Check build freshness to rule out VMR build failures (if builds are stale, it's a VMR issue, not Maestro)
+- Check for open forward flow PRs from the product repo into `dotnet/dotnet` — an open forward flow PR can block backflow
+- For stuck PRs, check the PR's age and recent activity — a PR open >3 days with no progress needs attention
+
+### Step 4: Enrich with GitHub Data
+
+Use GitHub PR details to check state, comments, and merge status for any PRs flagged as problematic.
 
 ## PR Analysis Workflow
 
@@ -102,25 +137,6 @@ Call `maestro_build_freshness` with the channel short name (e.g., `11.0.1xx`). C
 To check if a specific fix has reached the PR:
 1. Read `src/source-manifest.json` from the VMR at the PR's snapshot commit — find the product repo's `commitSha`
 2. Check if the fix commit is an ancestor of that SHA
-
-## Codeflow Overview Workflow
-
-When the user asks "what codeflow PRs are active?" or "what's the flow status?", start by listing tracked codeflow PRs:
-
-### Step 1: List Tracked PRs
-
-List all codeflow PRs currently tracked by Maestro, optionally filtering by channel name.
-
-### Step 2: Drill Into Specific PRs
-
-For any PR that looks problematic:
-- Check the tracked PR details for a specific subscription
-- For a VMR build, check its backflow status to see which backflow PRs it produced
-- Check the subscription's update history to see the timeline of build applications
-
-### Step 3: Enrich with GitHub Data
-
-Use GitHub PR details to check state, comments, and merge status for any PRs flagged as problematic.
 
 ## Flow Health Workflow (Script + MCP)
 
@@ -183,10 +199,16 @@ Combine script output (GitHub PR state) + MCP data (Maestro health) to produce t
 - **✅ ACTIVE**: PR has content and recent activity
 
 ### Subscription Health Diagnostics
-- **`maestro-stuck`**: Subscription enabled, but last applied build is older than latest — Maestro isn't processing. Use `maestro_trigger_subscription` to remediate.
+- **`maestro-stuck`**: Subscription enabled, but last applied build is older than latest — Maestro isn't processing. Trigger the subscription to remediate.
 - **`subscription-disabled`**: Subscription turned off — intentional or oversight
 - **`channel-frozen`**: Latest build is `Released` — no action needed (preview shipped)
 - **`subscription-missing`**: No subscription exists — expected for shipped previews
+
+### Subscription History Patterns
+- **`ApplyingUpdates` failure**: Maestro couldn't create or update the PR branch — typically a git conflict or API error
+- **`MergingPullRequest` failure**: PR exists but merge failed — usually CI checks blocking merge
+- **Alternating failures**: Normal retry behavior — Maestro retries on the next build
+- **Long gap with no entries**: Subscription may be disabled or channel has no new builds
 
 > ❌ **Never assume "Unknown" means healthy.** API failures produce Unknown status — exclude from positive counts.
 
@@ -218,11 +240,8 @@ Check `isCodeflowPR` first — if the PR isn't from `dotnet-maestro[bot]`, skip 
 ### Darc Commands (When MCP Insufficient)
 
 ```bash
-# Force trigger (not yet in MCP)
-darc trigger-subscriptions --id <subscription-id> --force
-
-# Resolve conflicts locally (not in MCP)
-darc vmr resolve-conflict --subscription <subscription-id>
+darc trigger-subscriptions --id <subscription-id> --force    # Force trigger (not yet in MCP)
+darc vmr resolve-conflict --subscription <subscription-id>   # Resolve conflicts locally
 ```
 
 ## Widespread Staleness Pattern
@@ -232,22 +251,6 @@ When multiple repos are missing backflow simultaneously, the root cause is usual
 1. Use `maestro_build_freshness` across multiple channels — if all are stale, VMR builds are broken
 2. Check public VMR CI builds at `dnceng-public/public` pipeline 278 for failures
 3. Search `dotnet/dotnet` issues with `[Operational Issue]` label
-
-## Deep Analysis with SQL
-
-Store subscription health results for cross-repo comparison:
-
-```sql
-CREATE TABLE IF NOT EXISTS flow_status (
-    id TEXT PRIMARY KEY,
-    repository TEXT,
-    target_branch TEXT,
-    subscription_id TEXT,
-    is_stale BOOLEAN,
-    builds_behind INTEGER,
-    last_checked TEXT DEFAULT (datetime('now'))
-);
-```
 
 ## References
 
