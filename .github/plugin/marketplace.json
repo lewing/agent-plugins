@@ -1,9 +1,9 @@
 {
-  "name": "lewing-public-skills",
+  "name": "lewing-public",
   "metadata": {
     "description": "Public skills by @lewing \u2014 CI analysis, code review, trusted publishing",
     "version": "0.1.0",
-    "sourceCommit": "3c8dd3e"
+    "sourceCommit": "7a0ebb5"
   },
   "owner": {
     "name": "lewing"
