@@ -41,12 +41,22 @@ Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FO
 - [vmr-build-topology.md](skills/flow-analysis/references/vmr-build-topology.md)
 - [vmr-codeflow-reference.md](skills/flow-analysis/references/vmr-codeflow-reference.md)
 
+### [flow-tracing](skills/flow-tracing/SKILL.md)
+
+Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: checking if a PR/commit from repo A has reached repo B, finding what runtime SHA is in an SDK build, tracing dependency versions through the VMR, checking if a commit is included in an SDK build, decoding SDK version strings, "has my fix reached runtime", "did roslyn#80873 flow to runtime", "what SHA is in SDK version X", cross-repo dependency tracing, mapping SDK versions to VMR commits. DO NOT USE FOR: codeflow PR health or staleness (use flow-analysis skill), CI build failures (use ci-analysis skill). INVOKES: GitHub MCP tools (get_file_contents, get_commit, issue_read, list_commits), maestro MCP tools (maestro_subscription_health, maestro_latest_build), and Get-SdkVersionTrace.ps1 script.
+
+**References:**
+- [azdo-pipelines.md](skills/flow-tracing/references/azdo-pipelines.md)
+- [sdk-version-format.md](skills/flow-tracing/references/sdk-version-format.md)
+- [servicing-topology.md](skills/flow-tracing/references/servicing-topology.md)
+
 ## MCP Servers
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
 
-- **[azure-devops](plugin.json#L23-L33)** — `npx` tool
-- **[hlx](plugin.json#L34-L40)** — `dnx` tool
-- **[maestro](plugin.json#L41-L47)** — `dnx` tool
-- **[mcp-binlog-tool](plugin.json#L48-L54)** — `dnx` tool
-- **[mihubot](plugin.json#L55-L58)** — https://mihubot.xyz/mcp
+- **[ado-dnceng-public](plugin.json#L24-L34)** — `npx` tool
+- **[ado-dnceng](plugin.json#L35-L45)** — `npx` tool
+- **[hlx](plugin.json#L46-L52)** — `dnx` tool
+- **[maestro](plugin.json#L53-L59)** — `dnx` tool
+- **[mcp-binlog-tool](plugin.json#L60-L66)** — `dnx` tool
+- **[mihubot](plugin.json#L67-L70)** — https://mihubot.xyz/mcp
