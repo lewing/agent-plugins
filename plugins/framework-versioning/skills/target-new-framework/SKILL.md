@@ -1,5 +1,5 @@
 ---
-name: tfm-version-upgrade
+name: target-new-framework
 description: Perform the .NET major version bump (e.g., net11 to net12) in any dotnet repo. Use when asked to "update TFMs", "create workload manifest for new version", "update from netN to netN+1", or "create frozen manifest". Covers eng/Versions.props, Directory.Build.props, workload manifests, templates, test assets, and documentation.
 ---
 

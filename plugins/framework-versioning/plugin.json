@@ -14,9 +14,9 @@
     "target-framework"
   ],
   "skills": [
-    "skills/tfm-version-upgrade"
+    "skills/target-new-framework"
   ],
   "agents": [
-    "agents/TfmVersionUpgrade.agent.md"
+    "agents/FrameworkVersioning.agent.md"
   ]
 }

@@ -19,17 +19,17 @@ Or install directly from GitHub:
 
 ## Skills
 
-### [tfm-version-upgrade](skills/tfm-version-upgrade/SKILL.md)
+### [target-new-framework](skills/target-new-framework/SKILL.md)
 
 Perform the .NET major version bump (e.g., net11 to net12) in any dotnet repo. Use when asked to "update TFMs", "create workload manifest for new version", "update from netN to netN+1", or "create frozen manifest". Covers eng/Versions.props, Directory.Build.props, workload manifests, templates, test assets, and documentation.
 
 **References:**
-- [version-bump-instructions.md](skills/tfm-version-upgrade/references/version-bump-instructions.md)
-- [workload-manifest-patterns.md](skills/tfm-version-upgrade/references/workload-manifest-patterns.md)
-- [workload-version-bump-instructions.md](skills/tfm-version-upgrade/references/workload-version-bump-instructions.md)
+- [version-bump-instructions.md](skills/target-new-framework/references/version-bump-instructions.md)
+- [workload-manifest-patterns.md](skills/target-new-framework/references/workload-manifest-patterns.md)
+- [workload-version-bump-instructions.md](skills/target-new-framework/references/workload-version-bump-instructions.md)
 
 ## Agents
 
-### [TfmVersionUpgrade](agents/TfmVersionUpgrade.agent.md)
+### [FrameworkVersioning](agents/FrameworkVersioning.agent.md)
 
-An agent that orchestrates the full .NET major version bump process across a repository. Drives discovery, updates, verification, and PR creation with human gates between phases. Uses the tfm-version-upgrade skill for domain knowledge.
+An agent that orchestrates the full .NET major version bump process across a repository. Drives discovery, updates, verification, and PR creation with human gates between phases. Uses the target-new-framework skill for domain knowledge.

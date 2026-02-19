@@ -36,7 +36,7 @@ Skills and agents for .NET major version bumps: TFM updates, workload manifest c
 
 | Skill | References |
 |-------|------------|
-| [tfm-version-upgrade](plugins/framework-versioning/skills/tfm-version-upgrade/SKILL.md) | [version-bump-instructions](plugins/framework-versioning/skills/tfm-version-upgrade/references/version-bump-instructions.md), [workload-manifest-patterns](plugins/framework-versioning/skills/tfm-version-upgrade/references/workload-manifest-patterns.md), [workload-version-bump-instructions](plugins/framework-versioning/skills/tfm-version-upgrade/references/workload-version-bump-instructions.md) |
+| [target-new-framework](plugins/framework-versioning/skills/target-new-framework/SKILL.md) | [version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/version-bump-instructions.md), [workload-manifest-patterns](plugins/framework-versioning/skills/target-new-framework/references/workload-manifest-patterns.md), [workload-version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/workload-version-bump-instructions.md) |
 
 ### [lewing](plugins/lewing/)
 
