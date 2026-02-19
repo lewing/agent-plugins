@@ -10,9 +10,6 @@ description: >
   cross-repo dependency tracing, mapping SDK versions to VMR commits.
   DO NOT USE FOR: codeflow PR health or staleness (use flow-analysis
   skill), CI build failures (use ci-analysis skill).
-  INVOKES: GitHub MCP tools (get_file_contents, get_commit, issue_read,
-  list_commits), maestro MCP tools (maestro_subscription_health,
-  maestro_latest_build), and Get-SdkVersionTrace.ps1 script.
 ---
 
 # Flow Tracing

@@ -35,7 +35,7 @@ Analyze CI build and test status from Azure DevOps and Helix for dotnet reposito
 
 ### [flow-analysis](skills/flow-analysis/SKILL.md)
 
-Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FOR: investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues, checking overall flow status for a repo, diagnosing why backflow PRs are missing or blocked, subscription health, build freshness, URLs containing dotnet-maestro or "Source code updates from dotnet/dotnet". DO NOT USE FOR: CI build failures (use ci-analysis skill), code review (use code-review skill), general PR investigation without codeflow context, tracing whether a specific commit/PR has reached another repo (use flow-tracing skill). INVOKES: maestro MCP tools (maestro_subscriptions, maestro_subscription_health, maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription, maestro_codeflow_prs, maestro_tracked_pr, maestro_backflow_status, maestro_subscription_history), GitHub MCP tools (pull_request_read, get_file_contents, search_pull_requests), and Get-FlowHealth.ps1 script for batch flow health scanning.
+Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FOR: investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues, checking overall flow status for a repo, diagnosing why backflow PRs are missing or blocked, subscription health, build freshness, URLs containing dotnet-maestro or "Source code updates from dotnet/dotnet". DO NOT USE FOR: CI build failures (use ci-analysis skill), code review (use code-review skill), general PR investigation without codeflow context, tracing whether a specific commit/PR has reached another repo (use flow-tracing skill).
 
 **References:**
 - [vmr-build-topology.md](skills/flow-analysis/references/vmr-build-topology.md)
@@ -43,7 +43,7 @@ Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FO
 
 ### [flow-tracing](skills/flow-tracing/SKILL.md)
 
-Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: checking if a PR/commit from repo A has reached repo B, finding what runtime SHA is in an SDK build, tracing dependency versions through the VMR, checking if a commit is included in an SDK build, decoding SDK version strings, "has my fix reached runtime", "did roslyn#80873 flow to runtime", "what SHA is in SDK version X", cross-repo dependency tracing, mapping SDK versions to VMR commits. DO NOT USE FOR: codeflow PR health or staleness (use flow-analysis skill), CI build failures (use ci-analysis skill). INVOKES: GitHub MCP tools (get_file_contents, get_commit, issue_read, list_commits), maestro MCP tools (maestro_subscription_health, maestro_latest_build), and Get-SdkVersionTrace.ps1 script.
+Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: checking if a PR/commit from repo A has reached repo B, finding what runtime SHA is in an SDK build, tracing dependency versions through the VMR, checking if a commit is included in an SDK build, decoding SDK version strings, "has my fix reached runtime", "did roslyn#80873 flow to runtime", "what SHA is in SDK version X", cross-repo dependency tracing, mapping SDK versions to VMR commits. DO NOT USE FOR: codeflow PR health or staleness (use flow-analysis skill), CI build failures (use ci-analysis skill).
 
 **References:**
 - [azdo-pipelines.md](skills/flow-tracing/references/azdo-pipelines.md)

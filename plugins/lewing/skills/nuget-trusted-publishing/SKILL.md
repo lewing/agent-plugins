@@ -5,7 +5,6 @@ description: >
   with short-lived tokens. USE FOR: trusted publishing, NuGet OIDC, keyless NuGet publish,
   migrate from NuGet API key, NuGet/login, secure NuGet publishing.
   DO NOT USE FOR: publishing to private feeds or Azure Artifacts (OIDC is nuget.org only).
-  INVOKES: powershell, edit, create, ask_user for guided repo setup.
 ---
 
 # NuGet Trusted Publishing Setup

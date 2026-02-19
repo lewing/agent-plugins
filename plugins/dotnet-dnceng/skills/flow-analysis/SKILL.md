@@ -11,12 +11,6 @@ description: >
   (use code-review skill), general PR investigation without codeflow context,
   tracing whether a specific commit/PR has reached another repo (use
   flow-tracing skill).
-  INVOKES: maestro MCP tools (maestro_subscriptions, maestro_subscription_health,
-  maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription,
-  maestro_codeflow_prs, maestro_tracked_pr, maestro_backflow_status,
-  maestro_subscription_history),
-  GitHub MCP tools (pull_request_read, get_file_contents, search_pull_requests),
-  and Get-FlowHealth.ps1 script for batch flow health scanning.
 ---
 
 # Flow Analysis
