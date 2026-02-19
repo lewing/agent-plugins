@@ -4,8 +4,15 @@ Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and bu
 
 ## Installation
 
+Via marketplace:
 ```
-/plugin install dotnet-dnceng
+copilot plugin marketplace add lewing/agent-plugins
+copilot plugin install dotnet-dnceng@lewing-public-skills
+```
+
+Or directly from GitHub:
+```
+copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
 ```
 
 ## Skills

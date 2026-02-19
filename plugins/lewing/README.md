@@ -4,8 +4,15 @@ Personal skills by @lewing — skill development for Copilot CLI
 
 ## Installation
 
+Via marketplace:
 ```
-/plugin install lewing
+copilot plugin marketplace add lewing/agent-plugins
+copilot plugin install lewing@lewing-public-skills
+```
+
+Or directly from GitHub:
+```
+copilot plugin install lewing/agent-plugins:plugins/lewing
 ```
 
 ## Skills

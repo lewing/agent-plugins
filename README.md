@@ -6,11 +6,15 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 
 ## Installation
 
+Register the marketplace, then install any plugin:
 ```
-/plugin marketplace add lewing/agent-plugins
+copilot plugin marketplace add lewing/agent-plugins
+copilot plugin install dotnet-dnceng@lewing-public-skills
+```
 
-# Install a plugin
-/plugin install dotnet-dnceng
+Or install directly from GitHub without registering:
+```
+copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
 ```
 
 ## Available Plugins
