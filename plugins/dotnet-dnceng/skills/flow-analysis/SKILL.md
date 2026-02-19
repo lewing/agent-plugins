@@ -11,6 +11,7 @@ description: >
   (use code-review skill), general PR investigation without codeflow context,
   tracing whether a specific commit/PR has reached another repo (use
   flow-tracing skill).
+  INVOKES: maestro and GitHub MCP tools, Get-FlowHealth.ps1 script.
 ---
 
 # Flow Analysis
