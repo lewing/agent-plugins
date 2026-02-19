@@ -8,7 +8,9 @@ description: >
   subscription health, build freshness, URLs containing dotnet-maestro or
   "Source code updates from dotnet/dotnet".
   DO NOT USE FOR: CI build failures (use ci-analysis skill), code review
-  (use code-review skill), general PR investigation without codeflow context.
+  (use code-review skill), general PR investigation without codeflow context,
+  tracing whether a specific commit/PR has reached another repo (use
+  flow-tracing skill).
   INVOKES: maestro MCP tools (maestro_subscriptions, maestro_subscription_health,
   maestro_build_freshness, maestro_latest_build, maestro_trigger_subscription,
   maestro_codeflow_prs, maestro_tracked_pr, maestro_backflow_status,
