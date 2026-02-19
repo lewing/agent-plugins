@@ -15,6 +15,11 @@ Or directly from GitHub:
 copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
 ```
 
+Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
+```
+/plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+```
+
 ## Skills
 
 ### [ci-analysis](skills/ci-analysis/SKILL.md)

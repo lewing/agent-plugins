@@ -17,6 +17,11 @@ Or install directly from GitHub without registering:
 copilot plugin install lewing/agent-plugins:plugins/dotnet-dnceng
 ```
 
+Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
+```
+/plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+```
+
 ## Available Plugins
 
 ### [dotnet-dnceng](plugins/dotnet-dnceng/)

@@ -15,6 +15,11 @@ Or directly from GitHub:
 copilot plugin install lewing/agent-plugins:plugins/lewing
 ```
 
+Inside Copilot CLI, use `/plugin` instead of `copilot plugin`:
+```
+/plugin install lewing/agent-plugins:plugins/lewing
+```
+
 ## Skills
 
 ### [nuget-trusted-publishing](skills/nuget-trusted-publishing/SKILL.md)
