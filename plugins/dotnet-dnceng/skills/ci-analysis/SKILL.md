@@ -11,6 +11,8 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 **Workflow**: Gather PR context (Step 0) → run the script → read human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations. The script collects data; you generate the advice. MCP tools (AzDO, Helix, GitHub) provide supplementary access when available; the script and `gh` CLI work independently when they're not.
 
+**Accessing services**: There are several possible methods to access each service (AzDO, Helix, GitHub). Start with MCP tools, then fall back to CLI (`gh` for GitHub, `Invoke-RestMethod` for AzDO/Helix REST APIs). Explore all available options before determining you don't have access. For AzDO, multiple tool sets may exist for different organizations — match the org in the build URL to the correct tools (see [references/azdo-helix-reference.md](references/azdo-helix-reference.md#azure-devops-organizations)). If queries return null, check the org before trying other approaches. For complex investigations, track what you've tried in SQL to avoid repeating failed approaches.
+
 ## When to Use This Skill
 
 - Checking CI status ("is CI passing?", "why is CI red?")
