@@ -60,9 +60,15 @@ Context changes how you interpret every failure. **Don't skip this.**
 3. **Check existing comments** — has someone already diagnosed failures or is a retry pending?
 4. **Note the changed files** — you'll use these for correlation after the script runs
 
-## After the Script: Analyze and Recommend
+## After the Script: Use Its Output
 
-After the script runs, follow the detailed workflow in [references/analysis-workflow.md](references/analysis-workflow.md). Key principles:
+> 🚨 **The script already collected the data. Do NOT re-query AzDO or Helix for information the script already produced.** Parse the `[CI_ANALYSIS_SUMMARY]` JSON and the human-readable output first. Only make additional API calls for data the script *didn't* provide (e.g., deeper Helix log searches, binlog analysis, build progression).
+
+**If the script found no builds** (e.g., AzDO builds expired, CI not triggered): report this to the user immediately. Don't spend turns re-querying AzDO with different org/project combinations — if the script couldn't find builds, they're likely unavailable. Offer alternatives: analyze by build ID if the user has one, check GitHub PR status for summary info, or note that Helix results may still be queryable directly even when AzDO builds have expired.
+
+**If the script succeeded**: the `[CI_ANALYSIS_SUMMARY]` JSON contains `failedJobDetails`, `knownIssues`, `canceledJobNames`, `prCorrelation`, and `recommendationHint`. Use these fields — don't re-fetch the same data via MCP tools or REST APIs. To find specific details in large output, use `Select-String` or `grep` on the output file rather than re-running the script.
+
+Then follow the detailed workflow in [references/analysis-workflow.md](references/analysis-workflow.md). Key principles:
 
 1. **Cross-reference failures with known issues** — The script outputs `failedJobDetails` and `knownIssues` as separate lists. You must explicitly match each failure to a known issue (by error message, test name, or job type) or mark it **unmatched**. Don't present them as two independent lists — the user needs a per-failure verdict.
 2. **Check Build Analysis status** — Green = all failures matched known issues. Red = some unmatched. Never claim "all known issues" when Build Analysis is red.
@@ -85,6 +91,8 @@ For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/re
 
 > ❌ **Don't say "safe to retry" with Build Analysis red.** Map each failing job to a specific known issue first.
 
+> ❌ **Don't use `Invoke-RestMethod` or `curl` for AzDO/Helix when MCP tools are available.** Check your available tools for `ado-dnceng-public-*`, `ado-dnceng-*`, and `hlx-*` first. REST API fallback is for when MCP tools are genuinely unavailable, not a first resort.
+
 ## References
 
 - **Script modes & parameters**: [references/script-modes.md](references/script-modes.md)
@@ -106,7 +114,5 @@ For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/re
 2. Look for `[ActiveIssue]` attributes for known skipped tests
 3. Use `-SearchMihuBot` for semantic search of related issues
 4. `gh pr checks --json` fields: `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow` — `state` has `SUCCESS`/`FAILURE` directly (no `conclusion` field)
-5. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results
+5. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results. Helix data may persist even when AzDO builds have expired — query Helix directly if you have job IDs.
 6. **Use `initial_wait: 60` (or more) when running `Get-CIStatus.ps1`** — the script completes in 12-25s. Insufficient wait causes timeout→poll loops that waste 3-7 extra tool calls
-7. **Search the output file, don't re-query** — after the script writes large output to a temp file, use `Select-String` or `grep` to find specific patterns (test names, error codes, Helix URLs). Do NOT re-run the script or make individual API calls for data already in the output
-8. **Use the JSON `knownIssues` field directly** — the `[CI_ANALYSIS_SUMMARY]` JSON already maps failures to known GitHub issues. Use this data rather than separately searching `gh issue list --label "Known Build Error"`
