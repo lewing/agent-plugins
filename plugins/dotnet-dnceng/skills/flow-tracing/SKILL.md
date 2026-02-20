@@ -17,8 +17,8 @@ description: >
 
 Trace dependency flow across .NET repositories through the VMR pipeline. Two workflows:
 
-1. **Cross-repo flow trace**: Has a change from repo A reached repo B? (e.g., "has roslyn#80873 reached runtime?")
-2. **SDK version trace**: What component SHA is in a specific SDK version? (e.g., "what runtime is in SDK 10.0.300-preview.26117.103?")
+1. **Cross-repo flow trace**: Has a change from repo A reached repo B? → Use Steps 1-4 below (reads GitHub files + maestro MCP directly)
+2. **SDK version trace**: What component SHA is in a specific SDK version? → **Run `Get-SdkVersionTrace.ps1`** (handles version decoding, build lookup, and servicing topology automatically)
 
 ## When to Use This Skill
 
@@ -68,9 +68,11 @@ Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch. F
 
 If the VMR has the change, check if it has flowed to repo B:
 
+> ⚠️ **`eng/Version.Details.xml`** is the file you want — it contains source dependency entries with `Sha` fields pointing to upstream commits. Do NOT use `eng/Versions.props` (that file has NuGet package versions, not source SHAs).
+
 1. **Check subscription health** for repo B using maestro MCP — is the backflow subscription current?
 2. **If subscription is current**: The change has reached repo B. Confirm by reading `eng/Version.Details.xml` in repo B on the target branch — look for the `dotnet/dotnet` source entry's `Sha` field.
-3. **If subscription is stale**: The subscription is behind, but the change may still be there. Check `eng/Version.Details.xml` — look up `source-manifest.json` at the specific VMR SHA that repo B consumed. If repo A's SHA in that older manifest is still at or past the merge commit, the change has reached repo B despite the subscription being behind on newer builds.
+3. **If subscription is stale**: The subscription is behind, but the change may still be there. Read `eng/Version.Details.xml` in repo B — the `dotnet/dotnet` source entry's `Sha` field is the VMR commit that repo B last consumed. Then read `src/source-manifest.json` from `dotnet/dotnet` at *that specific SHA* and check repo A's `commitSha`. If it's at or past the merge commit, the change reached repo B despite the subscription being behind on newer builds.
 4. **If subscription is stale AND the change isn't in repo B's consumed VMR SHA**: The change is in the VMR but hasn't flowed to repo B yet. Suggest checking backflow PR status (use flow-analysis skill for deeper diagnosis).
 
 ### Step 4: Report

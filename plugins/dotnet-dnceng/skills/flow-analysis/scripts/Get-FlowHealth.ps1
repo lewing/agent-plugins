@@ -398,9 +398,9 @@ $totalBranches = $backflowBranches.Count
 $totalFwd = $forwardFlowPRs.Count
 $problemCount = $blocked + $missing
 if ($problemCount -eq 0 -and $fwdStale -eq 0 -and $fwdConflict -eq 0) {
-    Write-Host "✅ $Repository: $totalBranches branches healthy, $totalFwd forward flow PRs" -ForegroundColor Green
+    Write-Host "✅ ${Repository}: $totalBranches branches healthy, $totalFwd forward flow PRs" -ForegroundColor Green
 } else {
-    Write-Host "⚠️ $Repository: $problemCount backflow issues ($blocked blocked, $missing missing), $($fwdStale + $fwdConflict) forward flow issues" -ForegroundColor Yellow
+    Write-Host "⚠️ ${Repository}: $problemCount backflow issues ($blocked blocked, $missing missing), $($fwdStale + $fwdConflict) forward flow issues" -ForegroundColor Yellow
 }
 
 # Output as JSON for the agent to consume
