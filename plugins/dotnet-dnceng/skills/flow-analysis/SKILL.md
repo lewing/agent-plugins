@@ -81,11 +81,11 @@ The **1xx band** has full source-build with runtime forward flow. **2xx/3xx band
 
 When the user asks "what codeflow PRs are active?" or "what's the flow status?", use MCP tools for the fast multi-repo scan, then **run the script for any repo you'll call stale**.
 
-> 🚨 **"Builds behind" ≠ VMR commits behind.** Subscription health reports BAR build counts — a repo "566 builds behind" may only be 32 VMR commits behind. **Do NOT report "builds behind" as a staleness metric.** Before reporting any repo as stale, run `Get-CodeflowStatus.ps1 -Repository <repo> -CheckMissing -Branch <branch>` and use `vmrComparison.aheadBy` (VMR commits) instead. Skip this for repos that are healthy/current.
+> 🚨 **Trust "commits behind", don't trust "builds behind".** Subscription health returns two kinds of staleness numbers — **"N commits behind"** is real commit distance (trust it, report it directly) and **"~N builds behind"** (note the `~` prefix) is a meaningless BAR build ID delta that overstates staleness by 10x-300x. For any stale entry showing `~builds behind`, compute the real commit distance yourself (see Step 5).
 
 ### Step 1: Check Subscription Health
 
-Check subscription health for the target repository. This shows which subscriptions are stale (behind on builds) and which are current. Use the results to **identify which repos need script follow-up** — don't present raw "builds behind" numbers to the user.
+Check subscription health for the target repository. This shows which subscriptions are stale and which are current. Entries showing "N commits behind" (no `~`) have real commit distances — use those directly. Entries showing "~N builds behind" (with `~`) need commit distance computation in Step 5.
 
 > ⚠️ **Output includes ALL subscriptions** (all branches and channels). For a version-specific query like "net11 status", filter the results for channels containing your target version (e.g., `11.0`) and the relevant branch (`main` for current dev).
 
@@ -106,15 +106,24 @@ For subscriptions that are stale — whether they have a stuck PR or no PR at al
 - Check build freshness to rule out VMR build failures (if builds are stale, it's a VMR issue, not Maestro)
 - For stuck PRs, check the PR's age and recent activity — a PR open >3 days with no progress needs attention
 
-### Step 5: Get Commit Distance for Stale Repos
+### Step 5: Compute Real Commit Distance
 
-For each repo flagged as stale in Step 1, get the **actual VMR commit distance**:
+For stale entries showing "~N builds behind", compute the **actual commit distance**:
+
+**GitHub-hosted repos** — use the compare API (fast, 3 calls per repo):
+1. Get the two builds: `maestro_build` for the "last applied" and "latest available" build IDs from Step 1
+2. Extract the source commit SHAs from each build
+3. Compare: `gh api repos/{owner}/{repo}/compare/{lastCommit}...{latestCommit} --jq '.ahead_by'`
+
+Report the `ahead_by` value as "N commits behind".
+
+**AzDO-hosted repos** (e.g., `dotnet-optimization`) — fall back to script:
 
 ```powershell
 ./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/runtime" -CheckMissing -Branch "main"
 ```
 
-Report `vmrComparison.aheadBy` as "N VMR commits behind" — this is the number to present. Skip healthy repos.
+Report `vmrComparison.aheadBy` as "N VMR commits behind". Skip healthy repos.
 
 ### Step 6: Enrich with GitHub Data
 
