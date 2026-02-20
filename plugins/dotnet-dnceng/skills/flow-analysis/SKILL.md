@@ -16,7 +16,7 @@ description: >
 
 # Flow Analysis
 
-Analyze VMR codeflow PR health by combining **maestro MCP tools** (subscription/build/channel data) with **GitHub MCP tools** (PR body, comments, commits, file contents). For single-PR analysis, you reason over MCP data directly. For repo-wide flow health, a script handles batch GitHub scanning in parallel.
+Analyze VMR codeflow PR health using **scripts** for data collection and **MCP tools** for enrichment and remediation. For single-PR analysis, `Get-CodeflowStatus.ps1` does comprehensive data collection (VMR commit comparison, forward flow discovery, staleness detection); maestro MCP tools provide subscription triggering and build freshness. For repo-wide flow health, `Get-FlowHealth.ps1` handles batch GitHub scanning in parallel.
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed.
 
@@ -37,14 +37,11 @@ Use this skill when:
 
 ## Quick Start
 
-For **"what's the flow status for repo X?"** — use the Codeflow Overview:
-1. Check subscription health for the target repository to find stale subscriptions
-2. List tracked codeflow PRs (filter by channel name or grep for your repo — output includes all repos)
-3. For stale subscriptions with no tracked PR → check subscription history to find the failure point
-4. Check build freshness for relevant channels to rule out VMR build failures
-5. Check for open forward flow PRs into `dotnet/dotnet` from the repo — these can cause staleness blocks on backflow
+For **"is the backflow healthy for repo X on branch Y?"** — use PR Analysis (`Get-CodeflowStatus.ps1 -Repository -Branch`). The script finds the open backflow PR (if any), compares VMR commits, discovers forward flow, and extracts warnings — all in one call.
 
-For **investigating a specific PR** — use PR Analysis below. If **no open PR exists**, check `maestro_tracked_pr` for the subscription to see Maestro's view, then inspect the most recently merged matching PR to confirm flow is healthy.
+For **"what's the flow status across all repos?"** or **multi-repo/multi-branch scanning** — use the Codeflow Overview (MCP tools for subscription health + build freshness across many repos simultaneously).
+
+For **investigating a specific PR** — use PR Analysis (`Get-CodeflowStatus.ps1 -PrUrl`). If **no open PR exists**, the script reports this; use MCP tools to check the subscription state.
 
 ## Codeflow Concepts
 
@@ -75,21 +72,22 @@ The **1xx band** has full source-build with runtime forward flow. **2xx/3xx band
 
 | Question | Mode | Approach |
 |----------|------|----------|
-| "What's the flow status for X?" | **Codeflow overview** | Subscription health + codeflow PRs + build freshness |
-| "Why is this PR stale/blocked?" | **PR analysis** | Read PR → extract metadata → check subscription health/history → assess freshness |
+| "Is backflow healthy for X on Y?" | **PR analysis** | `Get-CodeflowStatus.ps1 -Repository -Branch` → read output → MCP enrichment |
+| "Why is this PR stale/blocked?" | **PR analysis** | `Get-CodeflowStatus.ps1 -PrUrl` → read output → MCP enrichment |
+| "What's the flow status across all repos?" | **Codeflow overview** | Subscription health + codeflow PRs + build freshness (MCP tools) |
 | "Full flow health report for X" | **Flow health** | `Get-FlowHealth.ps1` script for batch GitHub scanning + maestro enrichment |
 
 ## Codeflow Overview Workflow
 
-When the user asks "what codeflow PRs are active?" or "what's the flow status?", start by checking subscription health and listing tracked PRs:
+When the user asks "what codeflow PRs are active?" or "what's the flow status?", use MCP tools for the fast multi-repo scan, then **run the script for any repo you'll call stale**.
+
+> 🚨 **"Builds behind" ≠ VMR commits behind.** Subscription health reports BAR build counts — a repo "566 builds behind" may only be 32 VMR commits behind. **Do NOT report "builds behind" as a staleness metric.** Before reporting any repo as stale, run `Get-CodeflowStatus.ps1 -Repository <repo> -CheckMissing -Branch <branch>` and use `vmrComparison.aheadBy` (VMR commits) instead. Skip this for repos that are healthy/current.
 
 ### Step 1: Check Subscription Health
 
-Check subscription health for the target repository. This shows which subscriptions are stale (behind on builds) and which are current.
+Check subscription health for the target repository. This shows which subscriptions are stale (behind on builds) and which are current. Use the results to **identify which repos need script follow-up** — don't present raw "builds behind" numbers to the user.
 
 > ⚠️ **Output includes ALL subscriptions** (all branches and channels). For a version-specific query like "net11 status", filter the results for channels containing your target version (e.g., `11.0`) and the relevant branch (`main` for current dev).
-
-> ⚠️ **"Builds behind" compares last *merged* build vs latest available.** High numbers are a real problem — codeflow PRs can get stuck for weeks or months without merging. Cross-check with the tracked PR: if the PR is less than a day old, the number may just reflect normal processing lag. If the PR has been open for days, it's genuinely stuck and needs investigation.
 
 ### Step 2: Check Forward Flow
 
@@ -108,7 +106,17 @@ For subscriptions that are stale — whether they have a stuck PR or no PR at al
 - Check build freshness to rule out VMR build failures (if builds are stale, it's a VMR issue, not Maestro)
 - For stuck PRs, check the PR's age and recent activity — a PR open >3 days with no progress needs attention
 
-### Step 5: Enrich with GitHub Data
+### Step 5: Get Commit Distance for Stale Repos
+
+For each repo flagged as stale in Step 1, get the **actual VMR commit distance**:
+
+```powershell
+./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/runtime" -CheckMissing -Branch "main"
+```
+
+Report `vmrComparison.aheadBy` as "N VMR commits behind" — this is the number to present. Skip healthy repos.
+
+### Step 6: Enrich with GitHub Data
 
 Use GitHub PR details to check state, comments, and merge status for any PRs flagged as problematic.
 
@@ -124,41 +132,49 @@ When asked about a major version, check **all branches** — don't ask for clari
 
 ## PR Analysis Workflow
 
-### Step 1: Read the PR and Extract Metadata
+> 🚨 **Script-first.** Always run `Get-CodeflowStatus.ps1` first. It produces a `[CODEFLOW_SUMMARY]` JSON block with VMR commit comparison, forward flow discovery, and staleness detection that cannot be replicated by individual MCP calls. **Do NOT re-query the same data via MCP tools** — read and interpret the script output.
 
-Read the PR details and extract codeflow metadata from the body:
-- **Subscription ID** — GUID between `[marker]: <> (Begin:<id>)` tags
-- **BAR build ID** — number in parentheses after the build link
-- **VMR commit SHA** — the `**Commit**:` field (snapshot this PR is based on)
-- **VMR branch** — the `**Branch**:` field
+### Step 1: Run the Script
 
-> 💡 **No open PR?** If no open backflow PR exists for the target branch, check `maestro_tracked_pr` for the subscription to see if Maestro is tracking one. If not, inspect the most recently merged matching PR to confirm flow completed successfully. A missing PR with a healthy subscription means flow is working normally.
+```powershell
+# Analyze a specific PR
+./scripts/Get-CodeflowStatus.ps1 -PrUrl "https://github.com/dotnet/runtime/pull/12345"
 
-### Step 2: Check Subscription Health, History, and Forward Flow
+# Check if a PR exists for a repo/branch (finds the open backflow PR)
+./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/runtime" -Branch "main"
 
-Check the subscription's health status to assess whether Maestro is processing builds for this flow.
+# Check for missing PRs across all branches
+./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/runtime" -CheckMissing
+```
 
-**Check forward flow first**: Search for open forward flow PRs from the product repo into `dotnet/dotnet` targeting the same VMR branch. An open forward flow PR blocks backflow updates — this is the most common cause of staleness.
+The script outputs a `[CODEFLOW_SUMMARY]` JSON block followed by a text summary. **Parse the JSON** — it contains:
+- **`status`**: MERGED / CLOSED / NO-OP / IN_PROGRESS / STALE / ACTIVE
+- **`vmrComparison.aheadBy`**: How many VMR commits behind (the *real* staleness number)
+- **`forwardFlow.prs[]`**: All open forward flow PRs with their state
+- **`warnings[]`**: Maestro staleness and conflict warnings extracted from PR comments
+- **`subscription.id`**: For use with MCP remediation tools
+- **`build.id`**: BAR build ID for triggering
 
-Then check the subscription's update history to see the timeline of build applications — this shows when each build was processed, whether it succeeded, and what PR was created/updated. Use this to answer "when did this subscription get stuck?" or "was there a failed attempt?"
+### Step 2: After the Script — Use Its Output
 
-You can also look up the tracked PR for a subscription to confirm Maestro's view of the active PR — this is faster than searching GitHub if you just need to confirm what Maestro is tracking.
+🚨 The script already collected PR metadata, VMR commit distances, forward flow PRs, and Maestro warnings. **Do NOT re-query this data.** Instead:
 
-### Step 3: Assess PR State
+1. **Read the `[CODEFLOW_SUMMARY]` JSON** and extract key facts:
+   - `vmrComparison.aheadBy` = how far behind (this is VMR commits, NOT builds)
+   - `forwardFlow.prs` = what's blocking backflow (open forward flow = blocked by design)
+   - `warnings` = staleness/conflict details from Maestro comments
+   - `status` = overall PR health classification
 
-Check PR comments for Maestro bot warnings:
-- **Staleness**: "codeflow cannot continue" or "source repository has received code changes"
-- **Conflict**: "Conflict detected" with file list
+2. **Use MCP tools only for enrichment** the script can't provide:
+   - `maestro_build_freshness` — check if VMR builds are healthy (channel-level, not per-PR)
+   - `maestro_subscription_history` — timeline of when the subscription got stuck (if script shows STALE)
+   - `maestro_trigger_subscription` — to remediate a stuck subscription (needs subscription ID + build ID from script output)
 
-Cross-reference with PR checks/mergeable status — if Codeflow verification passes or PR is mergeable, the issue may already be resolved.
+3. **Synthesize** script data + MCP enrichment into a diagnosis and recommendation.
 
-> 💡 **No open backflow PR to assess?** If the subscription is healthy and the most recently merged PR is recent, flow is working — Maestro will create a new PR when the next VMR build publishes. If the subscription is stale with no PR, check subscription history for the failure point.
+> 💡 **No open PR?** If `-Repository`/`-Branch` finds no open backflow PR, the script reports this. Use `maestro_tracked_pr` for the subscription to check Maestro's view, then check the most recently merged matching PR. A missing PR with a healthy subscription means flow is working normally.
 
-### Step 4: Check Build Freshness
-
-Call `maestro_build_freshness` with the channel short name (e.g., `11.0.1xx`). Compare the build date against the PR's build date to determine if newer builds exist.
-
-### Step 5: Trace a Fix (Optional)
+### Step 3: Trace a Fix (Optional)
 
 To check if a specific fix has reached the PR:
 1. Read `src/source-manifest.json` from the VMR at the PR's snapshot commit — find the product repo's `commitSha`
