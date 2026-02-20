@@ -24,13 +24,17 @@ Or install directly from GitHub:
 Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests".
 
 **References:**
+- [analysis-workflow.md](skills/ci-analysis/references/analysis-workflow.md)
 - [azdo-helix-reference.md](skills/ci-analysis/references/azdo-helix-reference.md)
 - [azure-cli.md](skills/ci-analysis/references/azure-cli.md)
 - [binlog-comparison.md](skills/ci-analysis/references/binlog-comparison.md)
 - [build-progression-analysis.md](skills/ci-analysis/references/build-progression-analysis.md)
 - [delegation-patterns.md](skills/ci-analysis/references/delegation-patterns.md)
+- [failure-interpretation.md](skills/ci-analysis/references/failure-interpretation.md)
 - [helix-artifacts.md](skills/ci-analysis/references/helix-artifacts.md)
 - [manual-investigation.md](skills/ci-analysis/references/manual-investigation.md)
+- [recommendation-generation.md](skills/ci-analysis/references/recommendation-generation.md)
+- [script-modes.md](skills/ci-analysis/references/script-modes.md)
 - [sql-tracking.md](skills/ci-analysis/references/sql-tracking.md)
 
 ### [flow-analysis](skills/flow-analysis/SKILL.md)
