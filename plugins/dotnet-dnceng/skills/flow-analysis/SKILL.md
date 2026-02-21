@@ -206,7 +206,7 @@ Flow health scanning uses a **hybrid approach**: the `Get-FlowHealth.ps1` script
 ```
 
 The script outputs structured JSON with:
-- **`backflow.branches[]`**: Per-branch status (healthy/stale/conflict/missing/up-to-date/released-preview), PR numbers, VMR commit mapping, ahead-by counts
+- **`backflow.branches[]`**: Per-branch status (healthy/stale/conflict/missing/up-to-date/released-preview), PR numbers, VMR commit mapping, ahead-by counts, **CI status** (`ciStatus`: green/red/pending/none, `ciFailedCount`/`ciTotalCount` when red)
 - **`backflow.summary`**: Counts of healthy/upToDate/blocked/missing branches
 - **`forwardFlow.prs[]`**: Open forward flow PRs with health status
 - **`forwardFlow.summary`**: Counts of healthy/stale/conflicted forward PRs
@@ -240,7 +240,19 @@ Combine script output (GitHub PR state) + MCP data (Maestro health) to produce t
 - **📭 NO-OP**: Empty diff — changes landed via other paths
 - **🔄 IN PROGRESS**: Recent force push within 24h — someone is working on it
 - **⏳ STALE**: No activity for >3 days — needs attention
+- **🔴 CI-RED**: CI is failing — investigate with ci-analysis even if codeflow is otherwise healthy
 - **✅ ACTIVE**: PR has content and recent activity
+
+### CI Status on Open PRs
+
+> 🚨 **Always report CI status for open PRs.** A "healthy" PR with red CI is NOT healthy — CI failure is a problem regardless of codeflow state. A stale PR with red CI is stale *because* CI is failing. Report `ciStatus` from the script output in every PR row.
+
+| ciStatus | Meaning | Action |
+|----------|---------|--------|
+| `green` | All checks passing | PR is mergeable if no conflicts |
+| `red` | CI failures (`ciFailedCount`/`ciTotalCount`) | **Always flag this** — even on "healthy" PRs. Suggest ci-analysis for deeper investigation. |
+| `pending` | Checks still running | Wait for completion |
+| `none` | No checks found | Unusual — may be freshly pushed |
 
 ### Subscription Health Diagnostics
 - **`maestro-stuck`**: Subscription enabled, but last applied build is older than latest — Maestro isn't processing. Trigger the subscription to remediate.

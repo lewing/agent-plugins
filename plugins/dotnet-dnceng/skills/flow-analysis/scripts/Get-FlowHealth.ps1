@@ -126,7 +126,7 @@ foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
 $healthJobs = @{}
 foreach ($branchName in ($openBranches.Keys | Sort-Object)) {
     if ($Branch -and $branchName -ne $Branch) { continue }
-    $healthJobs[$branchName] = Start-AsyncGh @('pr', 'view', $openBranches[$branchName].ToString(), '-R', $Repository, '--json', 'body,comments,updatedAt,mergeable')
+    $healthJobs[$branchName] = Start-AsyncGh @('pr', 'view', $openBranches[$branchName].ToString(), '-R', $Repository, '--json', 'body,comments,updatedAt,mergeable,statusCheckRollup')
 }
 
 # --- Collect PR body results and extract VMR metadata ---
@@ -175,7 +175,7 @@ foreach ($branchName in $vmrHeadJobs.Keys) {
 $openPRHealth = @{}
 foreach ($branchName in $healthJobs.Keys) {
     $result = Complete-AsyncJob $healthJobs[$branchName] {
-        $json = gh pr view $openBranches[$branchName] -R $Repository --json body,comments,updatedAt,mergeable 2>$null
+        $json = gh pr view $openBranches[$branchName] -R $Repository --json body,comments,updatedAt,mergeable,statusCheckRollup 2>$null
         if ($LASTEXITCODE -ne 0) { return $null }
         return ($json -join "`n")
     }
@@ -192,10 +192,32 @@ foreach ($branchName in $healthJobs.Keys) {
                 }
             }
         }
+        # CI status from statusCheckRollup
+        if ($prDetail.statusCheckRollup -and $prDetail.statusCheckRollup.contexts) {
+            $contexts = @($prDetail.statusCheckRollup.contexts)
+            $failed = @($contexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+            $pending = @($contexts | Where-Object { $_.state -eq 'PENDING' })
+            $total = $contexts.Count
+            if ($failed.Count -gt 0) {
+                $health.ciStatus = "red"
+                $health.ciFailedCount = $failed.Count
+                $health.ciTotalCount = $total
+            } elseif ($pending.Count -gt 0) {
+                $health.ciStatus = "pending"
+            } elseif ($total -gt 0) {
+                $health.ciStatus = "green"
+            } else {
+                $health.ciStatus = "none"
+            }
+        } else {
+            $health.ciStatus = "none"
+        }
+
         if ($health.hasConflict) { $health.status = "conflict" }
         elseif ($health.hasStaleness) { $health.status = "stale" }
+        elseif ($health.ciStatus -eq "red") { $health.status = "ci-red" }
 
-        if ($prDetail.body -match '\(Begin:([a-f0-9-]+)\)') {
+        if ($prDetail.body -match '\(Begin:([a-f0-9-]+)\)'){
             $health.subscriptionId = $Matches[1]
         }
         if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') {
@@ -246,12 +268,12 @@ if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
 # Forward flow health (parallel)
 $fwdHealthJobs = @{}
 foreach ($fpr in $fwdPRs) {
-    $fwdHealthJobs[$fpr.number] = Start-AsyncGh @('pr', 'view', $fpr.number.ToString(), '-R', 'dotnet/dotnet', '--json', 'comments,mergeable')
+    $fwdHealthJobs[$fpr.number] = Start-AsyncGh @('pr', 'view', $fpr.number.ToString(), '-R', 'dotnet/dotnet', '--json', 'comments,mergeable,statusCheckRollup')
 }
 $fwdHealth = @{}
 foreach ($fpr in $fwdPRs) {
     $result = Complete-AsyncJob $fwdHealthJobs[$fpr.number] {
-        $json = gh pr view $fpr.number -R dotnet/dotnet --json comments,mergeable 2>$null
+        $json = gh pr view $fpr.number -R dotnet/dotnet --json comments,mergeable,statusCheckRollup 2>$null
         if ($LASTEXITCODE -ne 0) { return $null }
         return ($json -join "`n")
     }
@@ -270,6 +292,20 @@ foreach ($fpr in $fwdPRs) {
         }
         if ($h.hasConflict) { $h.status = "conflict" }
         elseif ($h.hasStaleness) { $h.status = "stale" }
+
+        # CI status from statusCheckRollup
+        $h.ciStatus = "none"
+        if ($detail.statusCheckRollup -and $detail.statusCheckRollup.contexts) {
+            $ctx = @($detail.statusCheckRollup.contexts)
+            $fail = @($ctx | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+            $pend = @($ctx | Where-Object { $_.state -eq 'PENDING' })
+            if ($fail.Count -gt 0) {
+                $h.ciStatus = "red"; $h.ciFailedCount = $fail.Count; $h.ciTotalCount = $ctx.Count
+            } elseif ($pend.Count -gt 0) { $h.ciStatus = "pending" }
+            elseif ($ctx.Count -gt 0) { $h.ciStatus = "green" }
+        }
+        if ($h.status -eq "healthy" -and $h.ciStatus -eq "red") { $h.status = "ci-red" }
+
         $fwdHealth[$fpr.number] = $h
     } catch { }
 }
@@ -290,6 +326,8 @@ foreach ($branchName in ($openBranches.Keys | Sort-Object)) {
         $entry.status = $health.status
         $entry.hasConflict = $health.hasConflict
         $entry.hasStaleness = $health.hasStaleness
+        $entry.ciStatus = $health.ciStatus
+        if ($health.ciFailedCount) { $entry.ciFailedCount = $health.ciFailedCount; $entry.ciTotalCount = $health.ciTotalCount }
         if ($health.subscriptionId) { $entry.subscriptionId = $health.subscriptionId }
         if ($health.vmrBranch) { $entry.vmrBranch = $health.vmrBranch }
     } else {
@@ -356,6 +394,8 @@ foreach ($fpr in $fwdPRs) {
         $fEntry.status = $fh.status
         $fEntry.hasConflict = $fh.hasConflict
         $fEntry.hasStaleness = $fh.hasStaleness
+        $fEntry.ciStatus = $fh.ciStatus
+        if ($fh.ciFailedCount) { $fEntry.ciFailedCount = $fh.ciFailedCount; $fEntry.ciTotalCount = $fh.ciTotalCount }
     } else {
         $fEntry.status = "unknown"
     }
@@ -365,12 +405,13 @@ foreach ($fpr in $fwdPRs) {
 # --- Compute summary counts ---
 $healthy = @($backflowBranches | Where-Object { $_.status -eq "healthy" }).Count
 $upToDate = @($backflowBranches | Where-Object { $_.status -eq "up-to-date" -or $_.status -eq "released-preview" }).Count
-$blocked = @($backflowBranches | Where-Object { $_.status -in @("conflict", "stale") }).Count
+$blocked = @($backflowBranches | Where-Object { $_.status -in @("conflict", "stale", "ci-red") }).Count
 $missing = @($backflowBranches | Where-Object { $_.status -eq "missing" }).Count
 
 $fwdHealthy = @($forwardFlowPRs | Where-Object { $_.status -eq "healthy" }).Count
 $fwdStale = @($forwardFlowPRs | Where-Object { $_.status -eq "stale" }).Count
 $fwdConflict = @($forwardFlowPRs | Where-Object { $_.status -eq "conflict" }).Count
+$fwdCiRed = @($forwardFlowPRs | Where-Object { $_.status -eq "ci-red" }).Count
 
 $output = [ordered]@{
     repository  = $Repository
@@ -389,6 +430,7 @@ $output = [ordered]@{
             healthy    = $fwdHealthy
             stale      = $fwdStale
             conflicted = $fwdConflict
+            ciRed      = $fwdCiRed
         }
     }
 }
@@ -397,7 +439,7 @@ $output = [ordered]@{
 $totalBranches = $backflowBranches.Count
 $totalFwd = $forwardFlowPRs.Count
 $problemCount = $blocked + $missing
-if ($problemCount -eq 0 -and $fwdStale -eq 0 -and $fwdConflict -eq 0) {
+if ($problemCount -eq 0 -and $fwdStale -eq 0 -and $fwdConflict -eq 0 -and $fwdCiRed -eq 0) {
     Write-Host "✅ ${Repository}: $totalBranches branches healthy, $totalFwd forward flow PRs" -ForegroundColor Green
 } else {
     Write-Host "⚠️ ${Repository}: $problemCount backflow issues ($blocked blocked, $missing missing), $($fwdStale + $fwdConflict) forward flow issues" -ForegroundColor Yellow

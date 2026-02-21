@@ -154,7 +154,7 @@ function Get-CodeflowPRHealth {
 
     $result = @{ Status = "⚠️  Unknown"; Color = "Yellow"; HasConflict = $false; HasStaleness = $false; WasResolved = $false; Details = @() }
 
-    $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt,mergeable 2>$null
+    $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt,mergeable,statusCheckRollup 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $prJson) { return $result }
 
     try { $prDetail = ($prJson -join "`n") | ConvertFrom-Json } catch { return $result }
@@ -236,6 +236,21 @@ function Get-CodeflowPRHealth {
     else {
         if ($wasConflict) { $result.Status = "✅ Conflict resolved"; $result.WasResolved = $true }
         elseif ($wasStaleness) { $result.Status = "✅ Updated since staleness warning"; $result.WasResolved = $true }
+    }
+
+    # CI status from statusCheckRollup
+    if ($prDetail.statusCheckRollup -and $prDetail.statusCheckRollup.contexts) {
+        $ciContexts = @($prDetail.statusCheckRollup.contexts)
+        $ciFailed = @($ciContexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+        if ($ciFailed.Count -gt 0) {
+            $result.CIStatus = "red"
+            $result.CIFailed = $ciFailed.Count
+            $result.CITotal = $ciContexts.Count
+        } elseif (@($ciContexts | Where-Object { $_.state -eq 'PENDING' }).Count -gt 0) {
+            $result.CIStatus = "pending"
+        } elseif ($ciContexts.Count -gt 0) {
+            $result.CIStatus = "green"
+        }
     }
 
     return $result
@@ -807,7 +822,7 @@ if ($CheckMissing) {
     $healthJobs = @{}
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
         if ($openBranches.ContainsKey($branchName)) {
-            $healthJobs[$branchName] = Start-AsyncGh @('pr', 'view', $openBranches[$branchName].ToString(), '-R', $Repository, '--json', 'body,comments,updatedAt,mergeable')
+            $healthJobs[$branchName] = Start-AsyncGh @('pr', 'view', $openBranches[$branchName].ToString(), '-R', $Repository, '--json', 'body,comments,updatedAt,mergeable,statusCheckRollup')
         }
     }
 
@@ -831,7 +846,7 @@ if ($CheckMissing) {
     foreach ($branchName in $healthJobs.Keys) {
         $result = Complete-AsyncJob $healthJobs[$branchName] {
             try {
-                $json = gh pr view $openBranches[$branchName] -R $Repository --json body,comments,updatedAt,mergeable 2>$null
+                $json = gh pr view $openBranches[$branchName] -R $Repository --json body,comments,updatedAt,mergeable,statusCheckRollup 2>$null
                 if ($LASTEXITCODE -ne 0) { return $null }
                 return ($json -join "`n")
             } catch { return $null }
@@ -866,9 +881,30 @@ if ($CheckMissing) {
                     }
                     if ($bfHealth.HasConflict) { $bfHealth.Status = "🔴 Conflict"; $bfHealth.Color = "Red" }
                     elseif ($bfHealth.HasStaleness) { $bfHealth.Status = "⚠️  Stale"; $bfHealth.Color = "Yellow" }
+                    # CI status
+                    if ($prDetailH.statusCheckRollup -and $prDetailH.statusCheckRollup.contexts) {
+                        $ciContexts = @($prDetailH.statusCheckRollup.contexts)
+                        $ciFailed = @($ciContexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+                        if ($ciFailed.Count -gt 0) {
+                            $bfHealth.CIStatus = "red"
+                            $bfHealth.CIFailed = $ciFailed.Count
+                            $bfHealth.CITotal = $ciContexts.Count
+                        } elseif (@($ciContexts | Where-Object { $_.state -eq 'PENDING' }).Count -gt 0) {
+                            $bfHealth.CIStatus = "pending"
+                        } elseif ($ciContexts.Count -gt 0) {
+                            $bfHealth.CIStatus = "green"
+                        }
+                    }
                 } catch { }
             }
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
+            if ($bfHealth.CIStatus -eq 'red') {
+                Write-Host "    🔴 CI: $($bfHealth.CIFailed)/$($bfHealth.CITotal) checks failing" -ForegroundColor Red
+            } elseif ($bfHealth.CIStatus -eq 'pending') {
+                Write-Host "    ⏳ CI: checks still running" -ForegroundColor Yellow
+            } elseif ($bfHealth.CIStatus -eq 'green') {
+                Write-Host "    ✅ CI: all checks passing" -ForegroundColor Green
+            }
             if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ }
             elseif ($bfHealth.Status -notlike '*Unknown*') { $coveredCount++ }
             continue
@@ -980,6 +1016,13 @@ if ($CheckMissing) {
             Write-Host "  Branch: $branchName" -ForegroundColor White
             $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
+            if ($bfHealth.CIStatus -eq 'red') {
+                Write-Host "    🔴 CI: $($bfHealth.CIFailed)/$($bfHealth.CITotal) checks failing" -ForegroundColor Red
+            } elseif ($bfHealth.CIStatus -eq 'pending') {
+                Write-Host "    ⏳ CI: checks still running" -ForegroundColor Yellow
+            } elseif ($bfHealth.CIStatus -eq 'green') {
+                Write-Host "    ✅ CI: all checks passing" -ForegroundColor Green
+            }
             if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ }
             elseif ($bfHealth.Status -notlike '*Unknown*') { $coveredCount++ }
         }
