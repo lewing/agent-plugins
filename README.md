@@ -71,6 +71,8 @@ Skills and agents for .NET major version bumps: TFM updates, workload manifest c
 |-------|------------|
 | [target-new-framework](plugins/framework-versioning/skills/target-new-framework/SKILL.md) | [version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/version-bump-instructions.md), [workload-manifest-patterns](plugins/framework-versioning/skills/target-new-framework/references/workload-manifest-patterns.md), [workload-version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/workload-version-bump-instructions.md) |
 
+**Agents:** [FrameworkVersioning.agent](plugins/framework-versioning/agents/FrameworkVersioning.agent.md)
+
 ### [skill-trainer](plugins/skill-trainer/)
 
 Skills for building, testing, and training Copilot CLI skills — patterns, anti-patterns, eval methodology
@@ -79,6 +81,8 @@ Skills for building, testing, and training Copilot CLI skills — patterns, anti
 |-------|------------|
 | [skill-builder](plugins/skill-trainer/skills/skill-builder/SKILL.md) | [agent-conventions](plugins/skill-trainer/skills/skill-builder/references/agent-conventions.md), [anti-patterns](plugins/skill-trainer/skills/skill-builder/references/anti-patterns.md), [skill-lifecycle](plugins/skill-trainer/skills/skill-builder/references/skill-lifecycle.md), [skill-patterns](plugins/skill-trainer/skills/skill-builder/references/skill-patterns.md), [testing-patterns](plugins/skill-trainer/skills/skill-builder/references/testing-patterns.md) |
 | [skill-trainer-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/SKILL.md) | [eval-integration](plugins/skill-trainer/skills/skill-trainer-knowledge/references/eval-integration.md), [skill-builder-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/references/skill-builder-knowledge.md), [training-methodology](plugins/skill-trainer/skills/skill-trainer-knowledge/references/training-methodology.md) |
+
+**Agents:** [SkillTrainer.agent](plugins/skill-trainer/agents/SkillTrainer.agent.md)
 
 ### [lewing](plugins/lewing/)
 
