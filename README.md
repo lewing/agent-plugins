@@ -1,5 +1,7 @@
 # lewing/agent-plugins
 
+![plugins](https://img.shields.io/badge/plugins-4-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-2-purple)
+
 Public skills by @lewing — CI analysis, code review, trusted publishing
 
 A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills). Install plugins to get skills and MCP server configs automatically.
