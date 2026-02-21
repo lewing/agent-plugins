@@ -62,8 +62,9 @@ Use the agent's `create` tool to build the directory structure:
 ├── SKILL.md
 ├── scripts/          # if script-driven
 │   └── Get-{Action}.ps1
-└── references/
-    └── {topic}.md
+├── references/
+│   └── {topic}.md
+└── assets/           # if skill produces files (templates, schemas, etc.)
 ```
 
 Start with SKILL.md — it's the entry point. Use the template skeletons from [skill-patterns.md](skill-patterns.md).

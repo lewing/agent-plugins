@@ -69,6 +69,7 @@ New-Item -ItemType Directory -Path ~/.copilot/skills/{name}/references -Force
 # Or repo-level skill
 New-Item -ItemType Directory -Path .github/skills/{name}/references -Force
 # Add scripts/ only if script-driven
+# Add assets/ only if the skill produces files (templates, schemas, etc.)
 ```
 
 ### Step 3: Write SKILL.md

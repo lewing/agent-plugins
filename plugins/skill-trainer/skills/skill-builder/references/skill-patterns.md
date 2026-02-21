@@ -154,7 +154,7 @@ description: >
 |-------|------|-------------|--------|
 | 1. **Metadata** | `name` + `description` from frontmatter | Every query (~100 words) | Tiny — always present |
 | 2. **SKILL.md body** | Instructions, workflow, anti-patterns | When skill triggers | 2K–4K tokens (orchestrating) or up to 15K (applied-once knowledge) |
-| 3. **Resources** | `scripts/`, `references/`, assets | On demand by agent | Unlimited — scripts can execute without loading into context |
+| 3. **Resources** | `scripts/`, `references/`, `assets/` | On demand by agent | Unlimited — scripts can execute without loading into context |
 
 This is why keeping SKILL.md focused matters — level 1 happens for every query, level 2 only when the skill matches, level 3 only when the agent needs depth. When SKILL.md grows past ~500 lines, split content into `references/` and link clearly from SKILL.md so the agent knows the files exist.
 

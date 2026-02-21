@@ -1,6 +1,6 @@
 ---
 name: ci-analysis
-description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests".
+description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests". DO NOT USE FOR: investigating stale codeflow PRs or dependency update health, tracing whether a commit has flowed from one repo to another, reviewing code changes for correctness or style.
 ---
 
 # Azure DevOps and Helix CI Analysis
@@ -82,6 +82,8 @@ For interpreting error categories, crash recovery, and canceled jobs: [reference
 For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/recommendation-generation.md](references/recommendation-generation.md)
 
 ## Anti-Patterns
+
+> 🚨 **Every failure verdict needs evidence — no "Likely flaky" without proof.** Each row in your output table must cite a specific source: known issue number, Build Analysis match, or target-branch verification. If Build Analysis didn't match it and you haven't verified the target branch, the verdict is **"Unmatched — needs investigation"**, not "Likely flaky." A test that *looks* like it could be flaky is not the same as one you've *verified* is flaky.
 
 > ❌ **Don't label failures "infrastructure" without evidence.** Requires: Build Analysis match, identical failure on target branch, or confirmed outage. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
 

@@ -44,3 +44,7 @@ Institutional knowledge for skill training — frontmatter rules, INVOKES patter
 ### [SkillTrainer](agents/SkillTrainer.agent.md)
 
 Train and improve Copilot CLI skills through structured eval-driven iteration. USE FOR: improving existing skills, assessing skill quality, creating evals for skills, recording training decisions, opening Arena eval requests. DO NOT USE FOR: creating brand-new skills from scratch (use skill-builder), running Arena evals directly, Squad coordination. INVOKES: skill-builder skill, task tool for multi-model validation, gh CLI for Arena issues.
+
+### [SkillResearcher](agents/SkillResearcher.agent.md)
+
+Validate existing skills against upstream APIs, docs, and reality. USE FOR: fact-checking skill guidance against live docs, detecting stale API assumptions, auditing routing boundaries between related skills, pre-training research. DO NOT USE FOR: training skills (use SkillTrainer), building new skills from scratch (use skill-builder). INVOKES: web_fetch, GitHub MCP tools, Helix/AzDO/maestro MCP tools as needed.

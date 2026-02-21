@@ -12,6 +12,7 @@
     "skills/skill-trainer-knowledge"
   ],
   "agents": [
-    "agents/SkillTrainer.agent.md"
+    "agents/SkillTrainer.agent.md",
+    "agents/SkillResearcher.agent.md"
   ]
 }
