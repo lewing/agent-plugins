@@ -68,6 +68,8 @@ Context changes how you interpret every failure. **Don't skip this.**
 
 **If the script succeeded**: the `[CI_ANALYSIS_SUMMARY]` JSON contains `failedJobDetails`, `knownIssues`, `canceledJobNames`, `prCorrelation`, and `recommendationHint`. Use these fields — don't re-fetch the same data via MCP tools or REST APIs. To find specific details in large output, use `Select-String` or `grep` on the output file rather than re-running the script.
 
+> 🚨 **Check build progression on multi-commit PRs.** If the PR has multiple commits, query AzDO for builds on `refs/pull/{PR}/merge` (sorted by queue time, top 10-20) — `gh pr checks` only shows the latest SHA. Present a progression table showing which builds passed/failed at which SHAs. This narrows failures to the commit that introduced them. See [references/build-progression-analysis.md](references/build-progression-analysis.md).
+
 Then follow the detailed workflow in [references/analysis-workflow.md](references/analysis-workflow.md). Key principles:
 
 1. **Cross-reference failures with known issues** — The script outputs `failedJobDetails` and `knownIssues` as separate lists. You must explicitly match each failure to a known issue (by error message, test name, or job type) or mark it **unmatched**. Don't present them as two independent lists — the user needs a per-failure verdict.
@@ -115,4 +117,3 @@ For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/re
 3. Use `-SearchMihuBot` for semantic search of related issues
 4. `gh pr checks --json` fields: `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow` — `state` has `SUCCESS`/`FAILURE` directly (no `conclusion` field)
 5. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results. Helix data may persist even when AzDO builds have expired — query Helix directly if you have job IDs.
-6. **Use `initial_wait: 60` (or more) when running `Get-CIStatus.ps1`** — the script completes in 12-25s. Insufficient wait causes timeout→poll loops that waste 3-7 extra tool calls

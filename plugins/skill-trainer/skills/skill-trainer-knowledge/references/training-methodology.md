@@ -110,3 +110,12 @@ If guidance says "for GitHub-hosted repos, do X" but the model can't tell which 
 - ✅ "Entries with `~` prefix need manual computation" (model can see the `~`)
 - ❌ "GitHub-hosted repos show real distances" (model can't determine hosting from the output)
 - Quantify consequences: "overstates by 10x-300x" anchors models better than "meaningless number"
+
+### Pattern: Eval tests recall instead of behavior
+Knowledge-quiz evals ("name the tool") can produce false negatives when skills correctly use domain language instead of tool names. Use behavioral evals (give tool list, test mapping) instead.
+
+### Anti-Pattern: Optimizing for false economy
+Don't add skill guidance that trades **user experience** for **agent efficiency metrics**. Example: adding `initial_wait: 60` to avoid 3-7 cheap `read_powershell` poll calls makes the user stare at nothing for 60s instead of seeing incremental output at 30s. Tool call count is an agent metric, not a user metric. Poll loops are normal behavior — the agent already knows how to poll from its system prompt.
+- ❌ "Use initial_wait: 60 to avoid extra tool calls" (penalizes user to help agent)
+- ✅ Let the agent use its default behavior — polling is cheap and shows progress
+- **General rule:** If a tip optimizes an eval metric at the cost of UX, remove it. Skills should optimize for the user's experience, not the trainer's scorecard.
