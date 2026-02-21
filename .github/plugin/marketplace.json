@@ -3,7 +3,7 @@
   "metadata": {
     "description": "Public skills by @lewing \u2014 CI analysis, code review, trusted publishing",
     "version": "0.1.0",
-    "sourceCommit": "5fafc82"
+    "sourceCommit": "fb884b8"
   },
   "owner": {
     "name": "lewing"
@@ -22,9 +22,15 @@
       "version": "0.1.0"
     },
     {
+      "name": "skill-trainer",
+      "source": "plugins/skill-trainer",
+      "description": "Skills for building, testing, and training Copilot CLI skills \u2014 patterns, anti-patterns, eval methodology",
+      "version": "0.1.0"
+    },
+    {
       "name": "lewing",
       "source": "plugins/lewing",
-      "description": "Personal skills by @lewing \u2014 skill development for Copilot CLI",
+      "description": "Personal skills by @lewing \u2014 stealth Squad setup, NuGet trusted publishing",
       "version": "0.1.0"
     }
   ]

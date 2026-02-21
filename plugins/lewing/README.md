@@ -1,6 +1,6 @@
 # lewing
 
-Personal skills by @lewing — skill development for Copilot CLI
+Personal skills by @lewing — stealth Squad setup, NuGet trusted publishing
 
 ## Installation
 
