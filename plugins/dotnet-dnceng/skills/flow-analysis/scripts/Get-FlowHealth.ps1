@@ -78,12 +78,20 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 
 # --- Search for codeflow PRs ---
 Write-Host "🔍 Searching for codeflow PRs in $Repository..." -ForegroundColor Cyan
-$openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>$null
+
+# Use gh pr list (REST API, reliable) instead of gh search prs (search index, can lag)
+# Then filter client-side for codeflow PRs (title contains "Source code updates from dotnet/dotnet")
+$allOpenJson = gh pr list --repo $Repository --author "dotnet-maestro[bot]" --state open --json number,title --limit 100 2>$null
 $openPRs = @()
-if ($LASTEXITCODE -eq 0 -and $openPRsJson) {
-    try { $openPRs = ($openPRsJson -join "`n") | ConvertFrom-Json } catch { $openPRs = @() }
+if ($LASTEXITCODE -eq 0 -and $allOpenJson) {
+    try {
+        $allOpen = ($allOpenJson -join "`n") | ConvertFrom-Json
+        $openPRs = @($allOpen | Where-Object { $_.title -match 'Source code updates from dotnet/dotnet' })
+    } catch { $openPRs = @() }
 }
 
+# For merged PRs, gh pr list doesn't support --merged directly, so use gh search prs
+# (search lag is less critical for merged PRs since they're historical context)
 $mergedPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>$null
 $mergedPRs = @()
 if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {

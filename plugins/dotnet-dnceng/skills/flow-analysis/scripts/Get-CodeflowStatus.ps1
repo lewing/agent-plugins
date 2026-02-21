@@ -662,14 +662,18 @@ if ($CheckMissing) {
     }
 
     # Find open backflow PRs (to know which branches are already covered)
-    $openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>$null
+    # Use gh pr list (REST API, reliable) instead of gh search prs (search index, can lag)
+    $allOpenJson = gh pr list --repo $Repository --author "dotnet-maestro[bot]" --state open --json number,title --limit 100 2>$null
     $openPRs = @()
     $ghSearchFailed = $false
-    if ($LASTEXITCODE -eq 0 -and $openPRsJson) {
-        try { $openPRs = ($openPRsJson -join "`n") | ConvertFrom-Json } catch { $openPRs = @() }
+    if ($LASTEXITCODE -eq 0 -and $allOpenJson) {
+        try {
+            $allOpen = ($allOpenJson -join "`n") | ConvertFrom-Json
+            $openPRs = @($allOpen | Where-Object { $_.title -match 'Source code updates from dotnet/dotnet' })
+        } catch { $openPRs = @() }
     }
     elseif ($LASTEXITCODE -ne 0) {
-        Write-Warning "gh search failed (exit code $LASTEXITCODE). Check authentication with 'gh auth status'."
+        Write-Warning "gh pr list failed (exit code $LASTEXITCODE). Check authentication with 'gh auth status'."
         $ghSearchFailed = $true
     }
     $openBranches = @{}
