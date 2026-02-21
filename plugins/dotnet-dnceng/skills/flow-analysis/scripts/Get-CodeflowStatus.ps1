@@ -238,15 +238,16 @@ function Get-CodeflowPRHealth {
         elseif ($wasStaleness) { $result.Status = "✅ Updated since staleness warning"; $result.WasResolved = $true }
     }
 
-    # CI status from statusCheckRollup
-    if ($prDetail.statusCheckRollup -and $prDetail.statusCheckRollup.contexts) {
-        $ciContexts = @($prDetail.statusCheckRollup.contexts)
-        $ciFailed = @($ciContexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+    # CI status from statusCheckRollup (flat array with conclusion/status fields)
+    $rollup = $prDetail.statusCheckRollup
+    if ($rollup -and $rollup.Count -gt 0) {
+        $ciContexts = @($rollup)
+        $ciFailed = @($ciContexts | Where-Object { $_.conclusion -eq 'FAILURE' -or $_.conclusion -eq 'ERROR' -or $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
         if ($ciFailed.Count -gt 0) {
             $result.CIStatus = "red"
             $result.CIFailed = $ciFailed.Count
             $result.CITotal = $ciContexts.Count
-        } elseif (@($ciContexts | Where-Object { $_.state -eq 'PENDING' }).Count -gt 0) {
+        } elseif (@($ciContexts | Where-Object { ($_.status -eq 'IN_PROGRESS' -or $_.status -eq 'QUEUED' -or $_.status -eq 'PENDING') -or $_.state -eq 'PENDING' }).Count -gt 0) {
             $result.CIStatus = "pending"
         } elseif ($ciContexts.Count -gt 0) {
             $result.CIStatus = "green"
@@ -881,15 +882,16 @@ if ($CheckMissing) {
                     }
                     if ($bfHealth.HasConflict) { $bfHealth.Status = "🔴 Conflict"; $bfHealth.Color = "Red" }
                     elseif ($bfHealth.HasStaleness) { $bfHealth.Status = "⚠️  Stale"; $bfHealth.Color = "Yellow" }
-                    # CI status
-                    if ($prDetailH.statusCheckRollup -and $prDetailH.statusCheckRollup.contexts) {
-                        $ciContexts = @($prDetailH.statusCheckRollup.contexts)
-                        $ciFailed = @($ciContexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+                    # CI status (flat array with conclusion/status fields)
+                    $rollupH = $prDetailH.statusCheckRollup
+                    if ($rollupH -and $rollupH.Count -gt 0) {
+                        $ciContexts = @($rollupH)
+                        $ciFailed = @($ciContexts | Where-Object { $_.conclusion -eq 'FAILURE' -or $_.conclusion -eq 'ERROR' -or $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
                         if ($ciFailed.Count -gt 0) {
                             $bfHealth.CIStatus = "red"
                             $bfHealth.CIFailed = $ciFailed.Count
                             $bfHealth.CITotal = $ciContexts.Count
-                        } elseif (@($ciContexts | Where-Object { $_.state -eq 'PENDING' }).Count -gt 0) {
+                        } elseif (@($ciContexts | Where-Object { ($_.status -eq 'IN_PROGRESS' -or $_.status -eq 'QUEUED' -or $_.status -eq 'PENDING') -or $_.state -eq 'PENDING' }).Count -gt 0) {
                             $bfHealth.CIStatus = "pending"
                         } elseif ($ciContexts.Count -gt 0) {
                             $bfHealth.CIStatus = "green"

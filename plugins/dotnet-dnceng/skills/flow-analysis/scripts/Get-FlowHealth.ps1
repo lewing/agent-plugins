@@ -193,10 +193,12 @@ foreach ($branchName in $healthJobs.Keys) {
             }
         }
         # CI status from statusCheckRollup
-        if ($prDetail.statusCheckRollup -and $prDetail.statusCheckRollup.contexts) {
-            $contexts = @($prDetail.statusCheckRollup.contexts)
-            $failed = @($contexts | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
-            $pending = @($contexts | Where-Object { $_.state -eq 'PENDING' })
+        # gh pr view returns a flat array; CheckRun items have conclusion+status, StatusContext items have state
+        $rollup = $prDetail.statusCheckRollup
+        if ($rollup -and $rollup.Count -gt 0) {
+            $contexts = @($rollup)
+            $failed = @($contexts | Where-Object { $_.conclusion -eq 'FAILURE' -or $_.conclusion -eq 'ERROR' -or $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+            $pending = @($contexts | Where-Object { ($_.status -eq 'IN_PROGRESS' -or $_.status -eq 'QUEUED' -or $_.status -eq 'PENDING') -or $_.state -eq 'PENDING' })
             $total = $contexts.Count
             if ($failed.Count -gt 0) {
                 $health.ciStatus = "red"
@@ -293,12 +295,13 @@ foreach ($fpr in $fwdPRs) {
         if ($h.hasConflict) { $h.status = "conflict" }
         elseif ($h.hasStaleness) { $h.status = "stale" }
 
-        # CI status from statusCheckRollup
+        # CI status from statusCheckRollup (flat array with conclusion/status fields)
         $h.ciStatus = "none"
-        if ($detail.statusCheckRollup -and $detail.statusCheckRollup.contexts) {
-            $ctx = @($detail.statusCheckRollup.contexts)
-            $fail = @($ctx | Where-Object { $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
-            $pend = @($ctx | Where-Object { $_.state -eq 'PENDING' })
+        $rollup = $detail.statusCheckRollup
+        if ($rollup -and $rollup.Count -gt 0) {
+            $ctx = @($rollup)
+            $fail = @($ctx | Where-Object { $_.conclusion -eq 'FAILURE' -or $_.conclusion -eq 'ERROR' -or $_.state -eq 'FAILURE' -or $_.state -eq 'ERROR' })
+            $pend = @($ctx | Where-Object { ($_.status -eq 'IN_PROGRESS' -or $_.status -eq 'QUEUED' -or $_.status -eq 'PENDING') -or $_.state -eq 'PENDING' })
             if ($fail.Count -gt 0) {
                 $h.ciStatus = "red"; $h.ciFailedCount = $fail.Count; $h.ciTotalCount = $ctx.Count
             } elseif ($pend.Count -gt 0) { $h.ciStatus = "pending" }
