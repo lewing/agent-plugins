@@ -19,6 +19,7 @@ Choose the top-tier model from each available model family. Use at least 2, at m
 Example selection:
 ```
 claude-opus-4.5 or claude-sonnet-4  (Anthropic)
+gpt-5.3-codex                        (OpenAI)
 gpt-5.2                              (OpenAI, alternative perspective)
 ```
 
