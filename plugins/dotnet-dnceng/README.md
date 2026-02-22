@@ -60,7 +60,7 @@ This plugin configures the following [MCP servers](https://modelcontextprotocol.
 
 - **[ado-dnceng-public](plugin.json#L24-L34)** — `npx` tool
 - **[ado-dnceng](plugin.json#L35-L45)** — `npx` tool
-- **[hlx](plugin.json#L46-L52)** — `dnx` tool
-- **[maestro](plugin.json#L53-L59)** — `dnx` tool
-- **[mcp-binlog-tool](plugin.json#L60-L66)** — `dnx` tool
-- **[mihubot](plugin.json#L67-L70)** — https://mihubot.xyz/mcp
+- **[hlx](plugin.json#L46-L53)** — `dotnet` tool
+- **[maestro](plugin.json#L54-L61)** — `dotnet` tool
+- **[mcp-binlog-tool](plugin.json#L62-L69)** — `dotnet` tool
+- **[mihubot](plugin.json#L70-L73)** — https://mihubot.xyz/mcp

@@ -44,22 +44,25 @@
       }
     },
     "hlx": {
-      "command": "dnx",
+      "command": "dotnet",
       "args": [
+        "dnx",
         "--yes",
         "lewing.helix.mcp"
       ]
     },
     "maestro": {
-      "command": "dnx",
+      "command": "dotnet",
       "args": [
+        "dnx",
         "--yes",
         "lewing.maestro.mcp"
       ]
     },
     "mcp-binlog-tool": {
-      "command": "dnx",
+      "command": "dotnet",
       "args": [
+        "dnx",
         "--yes",
         "baronfel.binlog.mcp"
       ]
