@@ -1,6 +1,13 @@
 ---
 name: ci-analysis
-description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests". DO NOT USE FOR: investigating stale codeflow PRs or dependency update health, tracing whether a commit has flowed from one repo to another, reviewing code changes for correctness or style.
+description: >
+  Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs.
+  Use when checking CI status, investigating failures, determining if a PR is ready to merge,
+  or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red",
+  "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing",
+  or "flaky tests". DO NOT USE FOR: investigating stale codeflow PRs or dependency update health,
+  tracing whether a commit has flowed from one repo to another, reviewing code changes for
+  correctness or style.
 ---
 
 # Azure DevOps and Helix CI Analysis
