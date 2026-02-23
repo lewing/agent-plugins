@@ -663,7 +663,8 @@ if ($CheckMissing) {
 
     # Find open backflow PRs (to know which branches are already covered)
     # Use gh pr list (REST API, reliable) instead of gh search prs (search index, can lag)
-    $allOpenJson = gh pr list --repo $Repository --author "dotnet-maestro[bot]" --state open --json number,title --limit 100 2>$null
+    # Use --search instead of --author to avoid PS 5.1 bracket-mangling with [bot]
+    $allOpenJson = gh pr list --repo $Repository --search "author:app/dotnet-maestro" --state open --json number,title --limit 100 2>$null
     $openPRs = @()
     $ghSearchFailed = $false
     if ($LASTEXITCODE -eq 0 -and $allOpenJson) {
@@ -692,7 +693,7 @@ if ($CheckMissing) {
     }
 
     # Find recently merged backflow PRs to discover branches and VMR commit mapping
-    $mergedPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>$null
+    $mergedPRsJson = gh search prs --repo $Repository --author "app/dotnet-maestro" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>$null
     $mergedPRs = @()
     if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {
         try { $mergedPRs = ($mergedPRsJson -join "`n") | ConvertFrom-Json } catch { $mergedPRs = @() }
@@ -1039,7 +1040,7 @@ if ($CheckMissing) {
     Write-Host ""
     Write-Section "Forward flow PRs ($Repository → dotnet/dotnet)"
 
-    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
+    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "app/dotnet-maestro" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
     $fwdPRs = @()
     if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
         try { $fwdPRs = ($fwdPRsJson -join "`n") | ConvertFrom-Json } catch { $fwdPRs = @() }
@@ -1536,7 +1537,7 @@ if ($vmrCommit -and $vmrBranch) {
 
                 # --- For backflow PRs that are behind: check pending forward flow PRs ---
                 if ($isBackflow -and $compareStatus -eq 'ahead' -and $aheadBy -gt 0 -and $vmrBranch) {
-                    $forwardPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from" --base $vmrBranch --json number,title --limit 20 2>$null
+                    $forwardPRsJson = gh search prs --repo dotnet/dotnet --author "app/dotnet-maestro" --state open "Source code updates from" --base $vmrBranch --json number,title --limit 20 2>$null
                     $pendingForwardPRs = @()
                     if ($LASTEXITCODE -eq 0 -and $forwardPRsJson) {
                         try {

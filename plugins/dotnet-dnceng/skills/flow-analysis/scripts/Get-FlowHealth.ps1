@@ -81,7 +81,8 @@ Write-Host "🔍 Searching for codeflow PRs in $Repository..." -ForegroundColor 
 
 # Use gh pr list (REST API, reliable) instead of gh search prs (search index, can lag)
 # Then filter client-side for codeflow PRs (title contains "Source code updates from dotnet/dotnet")
-$allOpenJson = gh pr list --repo $Repository --author "dotnet-maestro[bot]" --state open --json number,title --limit 100 2>$null
+# Use --search instead of --author to avoid PS 5.1 bracket-mangling with [bot]
+$allOpenJson = gh pr list --repo $Repository --search "author:app/dotnet-maestro" --state open --json number,title --limit 100 2>$null
 $openPRs = @()
 if ($LASTEXITCODE -eq 0 -and $allOpenJson) {
     try {
@@ -92,7 +93,8 @@ if ($LASTEXITCODE -eq 0 -and $allOpenJson) {
 
 # For merged PRs, gh pr list doesn't support --merged directly, so use gh search prs
 # (search lag is less critical for merged PRs since they're historical context)
-$mergedPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>$null
+# Use app/ author syntax to avoid PS 5.1 bracket-mangling with [bot]
+$mergedPRsJson = gh search prs --repo $Repository --author "app/dotnet-maestro" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>$null
 $mergedPRs = @()
 if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {
     try { $mergedPRs = ($mergedPRsJson -join "`n") | ConvertFrom-Json } catch { $mergedPRs = @() }
@@ -266,7 +268,7 @@ foreach ($branchName in $compareJobs.Keys) {
 # --- Forward flow scan ---
 Write-Host "↔️ Scanning forward flow PRs..." -ForegroundColor Cyan
 $repoShortName = $Repository -replace '^dotnet/', ''
-$fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
+$fwdPRsJson = gh search prs --repo dotnet/dotnet --author "app/dotnet-maestro" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
 $fwdPRs = @()
 if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
     try {
