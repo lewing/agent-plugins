@@ -150,6 +150,8 @@ Periodically re-fetch these for updates. Each has specific things we rely on.
 | Skills, Tools & MCP Guide | https://aka.ms/skills/guidance | Skill classification (utility/workflow/analysis), routing patterns, USE FOR/DO NOT USE FOR, FOR SINGLE OPERATIONS, token budgets (500/5000 — we intentionally diverge to 4K/15K) | 2026-02-20 |
 | Plugin Marketplaces (Claude Code) | https://code.claude.com/docs/en/plugin-marketplaces | Marketplace creation and distribution — copilot-skills uses this model | 2026-02-20 |
 | Plugins Reference (Claude Code) | https://code.claude.com/docs/en/plugins-reference | Full plugin manifest schema (`plugin.json`), MCP server declaration | 2026-02-20 |
+| Skill Authoring Best Practices (Anthropic) | https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices | Progressive disclosure, context budgets, description <200 chars optimal, body ~50 lines target | 2026-02-22 |
+| Sample Skills (Anthropic) | https://github.com/anthropics/skills | Reference skill implementations from Anthropic — good for structure patterns | 2026-02-22 |
 | Arena SKILL-FORMAT.md | `Blazor-Playground/arena` repo | Token budget validation (4K/15K/20K enforced), stop signal evidence (42→25 tool calls), domain examples > tool schemas | 2026-02-20 |
 | Arena decisions.md | `Blazor-Playground/arena` repo | 16+ architectural decisions, INVOKES A/B test data, model-specific behaviors | 2026-02-20 |
 | copilot-skills README | `Blazor-Playground/copilot-skills` README.md | Marketplace structure, plugin groups, CLI tool (`blazor-ai.cs`) commands, installation paths | 2026-02-20 |
@@ -161,6 +163,7 @@ Periodically re-fetch these for updates. Each has specific things we rely on.
 - **GitHub docs**: New skill locations? Changes to discovery mechanism? New CLI commands?
 - **VS Code docs**: New frontmatter fields? Changes to invocation mode behavior?
 - **aka.ms/skills/guidance**: Updated token budget recommendations? New classification types? New routing patterns?
+- **Anthropic best practices**: Updated progressive disclosure guidance? Changed description/body size recommendations?
 - **Claude Code docs**: Plugin manifest schema changes? New marketplace features?
 - **Arena**: New empirical findings? Updated SKILL-FORMAT constraints?
 - **copilot-skills repo**: New plugin groups? Changed CI validation rules? New CLI tool features?
