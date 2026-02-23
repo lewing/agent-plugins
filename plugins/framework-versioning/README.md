@@ -9,12 +9,17 @@ Via marketplace (supports updates):
 /plugin marketplace add lewing/agent-plugins
 /plugin install framework-versioning@lewing-public
 /plugin update framework-versioning@lewing-public
-/plugin uninstall framework-versioning@lewing-public
 ```
 
 Or install directly from GitHub:
 ```
 /plugin install lewing/agent-plugins:plugins/framework-versioning
+```
+
+## Uninstall
+
+```
+/plugin uninstall framework-versioning@lewing-public
 ```
 
 ## Skills

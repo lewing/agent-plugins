@@ -9,12 +9,17 @@ Via marketplace (supports updates):
 /plugin marketplace add lewing/agent-plugins
 /plugin install dotnet-dnceng@lewing-public
 /plugin update dotnet-dnceng@lewing-public
-/plugin uninstall dotnet-dnceng@lewing-public
 ```
 
 Or install directly from GitHub:
 ```
 /plugin install lewing/agent-plugins:plugins/dotnet-dnceng
+```
+
+## Uninstall
+
+```
+/plugin uninstall dotnet-dnceng@lewing-public
 ```
 
 ## Skills

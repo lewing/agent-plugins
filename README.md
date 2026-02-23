@@ -19,7 +19,6 @@ Via marketplace (supports updates):
 /plugin   # → go to Discover tab
 /plugin install <plugin-name>@lewing-public
 /plugin update <plugin-name>@lewing-public
-/plugin uninstall <plugin-name>@lewing-public
 ```
 
 Or install directly from GitHub:
@@ -35,7 +34,6 @@ Via marketplace:
 /plugin marketplace browse lewing-public
 /plugin install <plugin-name>@lewing-public
 /plugin update <plugin-name>@lewing-public
-/plugin uninstall <plugin-name>@lewing-public
 /plugin list
 ```
 
@@ -49,6 +47,12 @@ List and manage installed skills:
 /skills list
 /skills        # toggle on/off with arrow keys + spacebar
 /skills reload # pick up newly added skills
+```
+
+## Uninstall
+
+```
+/plugin uninstall <plugin-name>@lewing-public
 ```
 
 ## Available Plugins

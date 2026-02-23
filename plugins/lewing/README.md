@@ -9,12 +9,17 @@ Via marketplace (supports updates):
 /plugin marketplace add lewing/agent-plugins
 /plugin install lewing@lewing-public
 /plugin update lewing@lewing-public
-/plugin uninstall lewing@lewing-public
 ```
 
 Or install directly from GitHub:
 ```
 /plugin install lewing/agent-plugins:plugins/lewing
+```
+
+## Uninstall
+
+```
+/plugin uninstall lewing@lewing-public
 ```
 
 ## Skills

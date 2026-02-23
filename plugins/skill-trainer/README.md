@@ -9,12 +9,17 @@ Via marketplace (supports updates):
 /plugin marketplace add lewing/agent-plugins
 /plugin install skill-trainer@lewing-public
 /plugin update skill-trainer@lewing-public
-/plugin uninstall skill-trainer@lewing-public
 ```
 
 Or install directly from GitHub:
 ```
 /plugin install lewing/agent-plugins:plugins/skill-trainer
+```
+
+## Uninstall
+
+```
+/plugin uninstall skill-trainer@lewing-public
 ```
 
 ## Skills
