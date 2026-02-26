@@ -1,6 +1,6 @@
 # lewing/agent-plugins
 
-![plugins](https://img.shields.io/badge/plugins-5-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-3-purple)
+![plugins](https://img.shields.io/badge/plugins-5-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-3-purple) ![MCP servers](https://img.shields.io/badge/MCP_servers-6-yellow) ![LSP servers](https://img.shields.io/badge/LSP_servers-1-orange)
 
 ![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-compatible-black?logo=github) ![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-cc785c?logo=anthropic)
 
