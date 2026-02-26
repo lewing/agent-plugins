@@ -1,0 +1,8 @@
+{
+  "name": "skill-trainer",
+  "description": "Skills for building, testing, and training Copilot CLI skills \u2014 patterns, anti-patterns, eval methodology",
+  "version": "0.1.0",
+  "author": {
+    "name": "lewing"
+  }
+}

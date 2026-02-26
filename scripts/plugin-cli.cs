@@ -43,6 +43,14 @@ var editionOption = new Option<string>("--edition")
 };
 editionOption.AcceptOnlyFromAmong("insiders", "stable", "both");
 
+var targetOption = new Option<string>("--target")
+{
+    Description = "Install target tool(s): auto (detect installed), copilot, claude, vscode, or all",
+    DefaultValueFactory = _ => "auto",
+    Recursive = true
+};
+targetOption.AcceptOnlyFromAmong("auto", "copilot", "claude", "vscode", "all");
+
 var exactOption = new Option<bool>("--exact")
 {
     Description = "Full sync: remove target files/entries not in repo (after backup)",
@@ -79,7 +87,7 @@ var backupPathOption = new Option<string?>("--backup-path")
 
 var rootCommand = new RootCommand("Plugin marketplace asset manager")
 {
-    editionOption, exactOption, forceOption, dryRunOption, verboseOption, backupPathOption
+    editionOption, targetOption, exactOption, forceOption, dryRunOption, verboseOption, backupPathOption
 };
 
 // ============================================================================
@@ -107,7 +115,7 @@ var skillOption = new Option<string?>("--skill")
 };
 var scopeOption = new Option<string>("--scope")
 {
-    Description = "Install target: personal (~/.copilot/skills/) or project (.github/skills/)",
+    Description = "Install target: personal (~/.copilot/skills/ + ~/.claude/skills/) or project (.github/skills/)",
     DefaultValueFactory = _ => "personal",
     Recursive = true
 };
@@ -117,14 +125,14 @@ skillsCmd.Options.Add(pluginOption);
 skillsCmd.Options.Add(skillOption);
 skillsCmd.Options.Add(scopeOption);
 skillsCmd.Subcommands.Add(Action("list", "List installed skills", pr =>
-    RunSkillsList(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption))));
+    RunSkillsList(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 skillsCmd.Subcommands.Add(Action("install", "Install skills from repo", pr =>
     RunSkillsInstall(pr.GetValue(exactOption), pr.GetValue(forceOption),
-        pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption))));
+        pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 skillsCmd.Subcommands.Add(Action("uninstall", "Remove repo-managed skills", pr =>
-    RunSkillsUninstall(pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption))));
+    RunSkillsUninstall(pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 skillsCmd.Subcommands.Add(Action("diff", "Compare repo vs installed skills", pr =>
-    RunSkillsDiff(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption))));
+    RunSkillsDiff(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(skillOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 rootCommand.Subcommands.Add(skillsCmd);
 
 // ----- Prompts -----
@@ -146,14 +154,14 @@ var agentsCmd = new Command("agents", "Manage custom agents (.agent.md)");
 agentsCmd.Options.Add(pluginOption);
 agentsCmd.Options.Add(scopeOption);
 agentsCmd.Subcommands.Add(Action("list", "List installed agents", pr =>
-    RunAgentsList(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption))));
+    RunAgentsList(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 agentsCmd.Subcommands.Add(Action("install", "Install agents from repo", pr =>
     RunAgentsInstall(pr.GetValue(exactOption), pr.GetValue(forceOption),
-        pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption))));
+        pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 agentsCmd.Subcommands.Add(Action("uninstall", "Remove repo-managed agents", pr =>
-    RunAgentsUninstall(pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption))));
+    RunAgentsUninstall(pr.GetValue(dryRunOption), pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 agentsCmd.Subcommands.Add(Action("diff", "Compare repo vs installed agents", pr =>
-    RunAgentsDiff(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption))));
+    RunAgentsDiff(pr.GetValue(verboseOption), pr.GetValue(pluginOption), pr.GetValue(scopeOption), pr.GetValue(targetOption))));
 rootCommand.Subcommands.Add(agentsCmd);
 
 // ----- Plugin -----
@@ -168,7 +176,7 @@ pluginCmd.Options.Add(scopeOption);
     var installCmd = new Command("install", "Install all assets from a plugin group") { nameArg };
     installCmd.SetAction(pr => RunPluginInstall(pr.GetValue(nameArg),
         pr.GetValue(forceOption), pr.GetValue(dryRunOption), pr.GetValue(verboseOption),
-        pr.GetValue(editionOption), pr.GetValue(scopeOption)));
+        pr.GetValue(editionOption), pr.GetValue(scopeOption), pr.GetValue(targetOption)));
     pluginCmd.Subcommands.Add(installCmd);
 
     var listNameArg = new Argument<string?>("name") { Description = nameArg.Description, Arity = ArgumentArity.ZeroOrOne };
@@ -179,14 +187,14 @@ pluginCmd.Options.Add(scopeOption);
     var diffNameArg = new Argument<string?>("name") { Description = nameArg.Description, Arity = ArgumentArity.ZeroOrOne };
     var diffCmd = new Command("diff", "Compare plugin assets: repo vs installed") { diffNameArg };
     diffCmd.SetAction(pr => RunPluginDiff(pr.GetValue(diffNameArg), pr.GetValue(verboseOption),
-        pr.GetValue(editionOption), pr.GetValue(scopeOption)));
+        pr.GetValue(editionOption), pr.GetValue(scopeOption), pr.GetValue(targetOption)));
     pluginCmd.Subcommands.Add(diffCmd);
 
     var uninstallNameArg = new Argument<string?>("name") { Description = nameArg.Description, Arity = ArgumentArity.ZeroOrOne };
     var uninstallCmd = new Command("uninstall", "Remove a plugin's installed assets") { uninstallNameArg };
     uninstallCmd.SetAction(pr => RunPluginUninstall(pr.GetValue(uninstallNameArg),
         pr.GetValue(dryRunOption), pr.GetValue(verboseOption),
-        pr.GetValue(editionOption), pr.GetValue(scopeOption)));
+        pr.GetValue(editionOption), pr.GetValue(scopeOption), pr.GetValue(targetOption)));
     pluginCmd.Subcommands.Add(uninstallCmd);
 }
 rootCommand.Subcommands.Add(pluginCmd);
@@ -207,14 +215,14 @@ rootCommand.Subcommands.Add(instrCmd);
 // ----- MCP -----
 var mcpCmd = new Command("mcp", "Manage MCP server configuration");
 mcpCmd.Subcommands.Add(Action("list", "List configured MCP servers", pr =>
-    RunMcpList(pr.GetValue(editionOption), pr.GetValue(verboseOption))));
+    RunMcpList(pr.GetValue(editionOption), pr.GetValue(targetOption), pr.GetValue(verboseOption))));
 mcpCmd.Subcommands.Add(Action("install", "Merge template MCP servers into config", pr =>
-    RunMcpInstall(pr.GetValue(editionOption), pr.GetValue(exactOption),
+    RunMcpInstall(pr.GetValue(editionOption), pr.GetValue(targetOption), pr.GetValue(exactOption),
         pr.GetValue(dryRunOption), pr.GetValue(verboseOption))));
 mcpCmd.Subcommands.Add(Action("uninstall", "Remove template MCP servers from config", pr =>
-    RunMcpUninstall(pr.GetValue(editionOption), pr.GetValue(dryRunOption), pr.GetValue(verboseOption))));
+    RunMcpUninstall(pr.GetValue(editionOption), pr.GetValue(targetOption), pr.GetValue(dryRunOption), pr.GetValue(verboseOption))));
 mcpCmd.Subcommands.Add(Action("diff", "Compare template vs installed MCP servers", pr =>
-    RunMcpDiff(pr.GetValue(editionOption), pr.GetValue(verboseOption))));
+    RunMcpDiff(pr.GetValue(editionOption), pr.GetValue(targetOption), pr.GetValue(verboseOption))));
 rootCommand.Subcommands.Add(mcpCmd);
 
 // ----- Settings -----
@@ -232,47 +240,51 @@ var allCmd = new Command("all", "Bulk operations across all categories");
 allCmd.Subcommands.Add(Action("list", "List all asset types", pr =>
 {
     var edition = pr.GetValue(editionOption);
+    var target = pr.GetValue(targetOption);
     var verbose = pr.GetValue(verboseOption);
     RunPluginList(null, verbose);
     RunFileCategoryList(edition, "prompts", "prompts", "*.prompt.md", "Prompts", verbose);
     RunInstructionsList(verbose);
-    RunMcpList(edition, verbose);
+    RunMcpList(edition, target, verbose);
     RunSettingsList(edition, verbose);
 }));
 allCmd.Subcommands.Add(Action("install", "Install everything from repo", pr =>
 {
     var edition = pr.GetValue(editionOption);
+    var target = pr.GetValue(targetOption);
     var exact = pr.GetValue(exactOption);
     var force = pr.GetValue(forceOption);
     var dryRun = pr.GetValue(dryRunOption);
     var verbose = pr.GetValue(verboseOption);
     var scope = pr.GetValue(scopeOption);
-    RunPluginInstall(null, force, dryRun, verbose, edition, scope);
+    RunPluginInstall(null, force, dryRun, verbose, edition, scope, target);
     RunFileCategoryInstall(edition, "prompts", "prompts", "*.prompt.md", "Prompts", exact, force, dryRun, verbose);
     RunInstructionsInstall(edition, exact, force, dryRun, verbose);
-    RunMcpInstall(edition, exact, dryRun, verbose);
+    RunMcpInstall(edition, target, exact, dryRun, verbose);
     RunSettingsUpdate(edition, dryRun, verbose);
 }));
 allCmd.Subcommands.Add(Action("uninstall", "Uninstall everything", pr =>
 {
     var edition = pr.GetValue(editionOption);
+    var target = pr.GetValue(targetOption);
     var dryRun = pr.GetValue(dryRunOption);
     var verbose = pr.GetValue(verboseOption);
     var scope = pr.GetValue(scopeOption);
-    RunPluginUninstall(null, dryRun, verbose, edition, scope);
+    RunPluginUninstall(null, dryRun, verbose, edition, scope, target);
     RunFileCategoryUninstall(edition, "prompts", "prompts", "*.prompt.md", "Prompts", dryRun, verbose);
     RunInstructionsUninstall(dryRun, verbose);
-    RunMcpUninstall(edition, dryRun, verbose);
+    RunMcpUninstall(edition, target, dryRun, verbose);
 }));
 allCmd.Subcommands.Add(Action("diff", "Diff all asset types", pr =>
 {
     var edition = pr.GetValue(editionOption);
+    var target = pr.GetValue(targetOption);
     var verbose = pr.GetValue(verboseOption);
     var scope = pr.GetValue(scopeOption);
-    RunPluginDiff(null, verbose, edition, scope);
+    RunPluginDiff(null, verbose, edition, scope, target);
     RunFileCategoryDiff(edition, "prompts", "prompts", "*.prompt.md", "Prompts", verbose);
     RunInstructionsDiff(verbose);
-    RunMcpDiff(edition, verbose);
+    RunMcpDiff(edition, target, verbose);
     RunSettingsDiff(edition, verbose);
 }));
 rootCommand.Subcommands.Add(allCmd);
@@ -306,11 +318,11 @@ bootstrapCmd.SetAction(pr =>
     repoRoot = tempDir;
 
     Console.WriteLine();
-    RunSkillsInstall(false, true, dryRun, verbose, null, null, "personal");
-    RunAgentsInstall(false, true, dryRun, verbose, null, "personal");
+    RunSkillsInstall(false, true, dryRun, verbose, null, null, "personal", "auto");
+    RunAgentsInstall(false, true, dryRun, verbose, null, "personal", "auto");
     RunFileCategoryInstall(edition, "prompts", "prompts", "*.prompt.md", "Prompts", false, true, dryRun, verbose);
     RunInstructionsInstall(edition, false, true, dryRun, verbose);
-    RunMcpInstall(edition, false, dryRun, verbose);
+    RunMcpInstall(edition, "auto", false, dryRun, verbose);
     RunSettingsUpdate(edition, dryRun, verbose);
 
     // Clean up temp clone
@@ -491,20 +503,26 @@ List<string> GetPluginsOrWarn(string? pluginFilter)
     return (mcpServers, lspServers);
 }
 
-void RunSkillsList(bool verbose, string? pluginFilter, string? skillFilter, string scope)
-    => RunAssetList("Skills", scope, GetSkillsTargetDir(scope), GetSourceSkills(pluginFilter, skillFilter), pluginFilter,
-        targetDir => Directory.Exists(targetDir)
-            ? Directory.GetDirectories(targetDir)
-                .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
-                .Select(Path.GetFileName).ToList()!
-            : []);
+void RunSkillsList(bool verbose, string? pluginFilter, string? skillFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetSkillsTargetDirs(scope, target))
+        RunAssetList($"Skills [{label}]", scope, dir, GetSourceSkills(pluginFilter, skillFilter), pluginFilter,
+            targetDir => Directory.Exists(targetDir)
+                ? Directory.GetDirectories(targetDir)
+                    .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
+                    .Select(Path.GetFileName).ToList()!
+                : []);
+}
 
-void RunAgentsList(bool verbose, string? pluginFilter, string scope)
-    => RunAssetList("Agents", scope, GetAgentsTargetDir(scope), GetSourceAgents(pluginFilter), pluginFilter,
-        targetDir => Directory.Exists(targetDir)
-            ? Directory.GetFiles(targetDir, "*.agent.md")
-                .Select(Path.GetFileName).ToList()!
-            : []);
+void RunAgentsList(bool verbose, string? pluginFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetAgentsTargetDirs(scope, target))
+        RunAssetList($"Agents [{label}]", scope, dir, GetSourceAgents(pluginFilter), pluginFilter,
+            targetDir => Directory.Exists(targetDir)
+                ? Directory.GetFiles(targetDir, "*.agent.md")
+                    .Select(Path.GetFileName).ToList()!
+                : []);
+}
 
 void RunAssetList(string label, string scope, string targetDir,
     List<(string pluginName, string assetName, string assetPath)> source, string? pluginFilter,
@@ -536,34 +554,40 @@ void RunAssetList(string label, string scope, string targetDir,
         Console.WriteLine($"    {item}");
 }
 
-void RunSkillsInstall(bool exact, bool force, bool dryRun, bool verbose, string? pluginFilter, string? skillFilter, string scope)
-    => RunAssetInstall("Skills", GetSkillsTargetDir(scope), scope,
-        GetSourceSkills(pluginFilter, skillFilter), pluginFilter,
-        exact, force, dryRun, verbose,
-        assetPath => Path.Combine(GetSkillsTargetDir(scope), Path.GetFileName(assetPath)),
-        dst => Directory.Exists(dst),
-        (dst, _) => BackupDirectory(dst, "skills", null),
-        (src, dst) => CopyDirectoryRecursive(src, dst),
-        targetDir => Directory.Exists(targetDir)
-            ? Directory.GetDirectories(targetDir)
-                .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
-                .Select(Path.GetFileName).ToList()!
-            : [],
-        path => { BackupDirectory(path, "skills", null); Directory.Delete(path, true); });
+void RunSkillsInstall(bool exact, bool force, bool dryRun, bool verbose, string? pluginFilter, string? skillFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetSkillsTargetDirs(scope, target))
+        RunAssetInstall($"Skills [{label}]", dir, scope,
+            GetSourceSkills(pluginFilter, skillFilter), pluginFilter,
+            exact, force, dryRun, verbose,
+            assetPath => Path.Combine(dir, Path.GetFileName(assetPath)),
+            dst => Directory.Exists(dst),
+            (dst, _) => BackupDirectory(dst, "skills", null),
+            (src, dst) => CopyDirectoryRecursive(src, dst),
+            targetDir => Directory.Exists(targetDir)
+                ? Directory.GetDirectories(targetDir)
+                    .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
+                    .Select(Path.GetFileName).ToList()!
+                : [],
+            path => { BackupDirectory(path, "skills", null); Directory.Delete(path, true); });
+}
 
-void RunAgentsInstall(bool exact, bool force, bool dryRun, bool verbose, string? pluginFilter, string scope)
-    => RunAssetInstall("Agents", GetAgentsTargetDir(scope), scope,
-        GetSourceAgents(pluginFilter), pluginFilter,
-        exact, force, dryRun, verbose,
-        assetPath => Path.Combine(GetAgentsTargetDir(scope), Path.GetFileName(assetPath)),
-        dst => File.Exists(dst),
-        (dst, _) => BackupFile(dst, "agents", null),
-        (src, dst) => File.Copy(src, dst, true),
-        targetDir => Directory.Exists(targetDir)
-            ? Directory.GetFiles(targetDir, "*.agent.md")
-                .Select(Path.GetFileName).ToList()!
-            : [],
-        path => { BackupFile(path, "agents", null); File.Delete(path); });
+void RunAgentsInstall(bool exact, bool force, bool dryRun, bool verbose, string? pluginFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetAgentsTargetDirs(scope, target))
+        RunAssetInstall($"Agents [{label}]", dir, scope,
+            GetSourceAgents(pluginFilter), pluginFilter,
+            exact, force, dryRun, verbose,
+            assetPath => Path.Combine(dir, Path.GetFileName(assetPath)),
+            dst => File.Exists(dst),
+            (dst, _) => BackupFile(dst, "agents", null),
+            (src, dst) => File.Copy(src, dst, true),
+            targetDir => Directory.Exists(targetDir)
+                ? Directory.GetFiles(targetDir, "*.agent.md")
+                    .Select(Path.GetFileName).ToList()!
+                : [],
+            path => { BackupFile(path, "agents", null); File.Delete(path); });
+}
 
 void RunAssetInstall(string label, string targetDir, string scope,
     List<(string pluginName, string assetName, string assetPath)> source, string? pluginFilter,
@@ -640,19 +664,25 @@ void RunAssetInstall(string label, string targetDir, string scope,
     }
 }
 
-void RunSkillsUninstall(bool dryRun, bool verbose, string? pluginFilter, string? skillFilter, string scope)
-    => RunAssetUninstall("Skills", GetSkillsTargetDir(scope), scope,
-        GetSourceSkills(pluginFilter, skillFilter), pluginFilter, dryRun, verbose,
-        assetPath => Path.Combine(GetSkillsTargetDir(scope), Path.GetFileName(assetPath)),
-        dst => Directory.Exists(dst),
-        dst => { BackupDirectory(dst, "skills", null); Directory.Delete(dst, true); });
+void RunSkillsUninstall(bool dryRun, bool verbose, string? pluginFilter, string? skillFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetSkillsTargetDirs(scope, target))
+        RunAssetUninstall($"Skills [{label}]", dir, scope,
+            GetSourceSkills(pluginFilter, skillFilter), pluginFilter, dryRun, verbose,
+            assetPath => Path.Combine(dir, Path.GetFileName(assetPath)),
+            dst => Directory.Exists(dst),
+            dst => { BackupDirectory(dst, "skills", null); Directory.Delete(dst, true); });
+}
 
-void RunAgentsUninstall(bool dryRun, bool verbose, string? pluginFilter, string scope)
-    => RunAssetUninstall("Agents", GetAgentsTargetDir(scope), scope,
-        GetSourceAgents(pluginFilter), pluginFilter, dryRun, verbose,
-        assetPath => Path.Combine(GetAgentsTargetDir(scope), Path.GetFileName(assetPath)),
-        dst => File.Exists(dst),
-        dst => { BackupFile(dst, "agents", null); File.Delete(dst); });
+void RunAgentsUninstall(bool dryRun, bool verbose, string? pluginFilter, string scope, string target)
+{
+    foreach (var (label, dir) in GetAgentsTargetDirs(scope, target))
+        RunAssetUninstall($"Agents [{label}]", dir, scope,
+            GetSourceAgents(pluginFilter), pluginFilter, dryRun, verbose,
+            assetPath => Path.Combine(dir, Path.GetFileName(assetPath)),
+            dst => File.Exists(dst),
+            dst => { BackupFile(dst, "agents", null); File.Delete(dst); });
+}
 
 void RunAssetUninstall(string label, string targetDir, string scope,
     List<(string pluginName, string assetName, string assetPath)> source, string? pluginFilter,
@@ -684,44 +714,48 @@ void RunAssetUninstall(string label, string targetDir, string scope,
     }
 }
 
-void RunSkillsDiff(bool verbose, string? pluginFilter, string? skillFilter, string scope)
+void RunSkillsDiff(bool verbose, string? pluginFilter, string? skillFilter, string scope, string target)
 {
-    PrintHeader($"Skills diff ({scope})");
-    var targetDir = GetSkillsTargetDir(scope);
-    var source = GetSourceSkills(pluginFilter, skillFilter);
-    if (pluginFilter == null)
-        source = ResolveDuplicateAssets(source);
+    foreach (var (label, dir) in GetSkillsTargetDirs(scope, target))
+    {
+        PrintHeader($"Skills diff [{label}] ({scope})");
+        var source = GetSourceSkills(pluginFilter, skillFilter);
+        if (pluginFilter == null)
+            source = ResolveDuplicateAssets(source);
 
-    var sourceMap = source.ToDictionary(s => s.assetName, s => s.assetPath, StringComparer.OrdinalIgnoreCase);
-    var targetItems = Directory.Exists(targetDir)
-        ? Directory.GetDirectories(targetDir)
-            .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
-            .Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase)
-        : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sourceMap = source.ToDictionary(s => s.assetName, s => s.assetPath, StringComparer.OrdinalIgnoreCase);
+        var targetItems = Directory.Exists(dir)
+            ? Directory.GetDirectories(dir)
+                .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
+                .Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    DiffSets(sourceMap.Keys, targetItems!, "  ",
-        name => File.ReadAllText(Path.Combine(sourceMap[name], "SKILL.md")),
-        name => File.ReadAllText(Path.Combine(targetDir, name, "SKILL.md")));
+        DiffSets(sourceMap.Keys, targetItems!, "  ",
+            name => File.ReadAllText(Path.Combine(sourceMap[name], "SKILL.md")),
+            name => File.ReadAllText(Path.Combine(dir, name, "SKILL.md")));
+    }
 }
 
-void RunAgentsDiff(bool verbose, string? pluginFilter, string scope)
+void RunAgentsDiff(bool verbose, string? pluginFilter, string scope, string target)
 {
-    PrintHeader($"Agents diff ({scope})");
-    var targetDir = GetAgentsTargetDir(scope);
-    var source = GetSourceAgents(pluginFilter);
-    if (pluginFilter == null)
-        source = ResolveDuplicateAssets(source);
+    foreach (var (label, dir) in GetAgentsTargetDirs(scope, target))
+    {
+        PrintHeader($"Agents diff [{label}] ({scope})");
+        var source = GetSourceAgents(pluginFilter);
+        if (pluginFilter == null)
+            source = ResolveDuplicateAssets(source);
 
-    var sourceMap = source.ToDictionary(
-        a => Path.GetFileName(a.assetPath), a => a.assetPath, StringComparer.OrdinalIgnoreCase);
-    var targetItems = Directory.Exists(targetDir)
-        ? Directory.GetFiles(targetDir, "*.agent.md")
-            .Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase)
-        : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sourceMap = source.ToDictionary(
+            a => Path.GetFileName(a.assetPath), a => a.assetPath, StringComparer.OrdinalIgnoreCase);
+        var targetItems = Directory.Exists(dir)
+            ? Directory.GetFiles(dir, "*.agent.md")
+                .Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    DiffSets(sourceMap.Keys, targetItems!, "  ",
-        name => File.ReadAllText(sourceMap[name]),
-        name => File.ReadAllText(Path.Combine(targetDir, name)));
+        DiffSets(sourceMap.Keys, targetItems!, "  ",
+            name => File.ReadAllText(sourceMap[name]),
+            name => File.ReadAllText(Path.Combine(dir, name)));
+    }
 }
 
 // Shared set-based diff: +/-/~ comparison between source and target item sets
@@ -979,25 +1013,24 @@ void RunInstructionsDiff(bool verbose)
 // MCP Handlers (edition-dependent)
 // ============================================================================
 
-void RunMcpList(string edition, bool verbose)
+void RunMcpList(string edition, string target, bool verbose)
 {
     PrintHeader("MCP Servers");
-    foreach (var ed in GetEditions(edition))
+    foreach (var mcp in GetMcpTargetPaths(target, edition))
     {
-        var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
-        Console.WriteLine($"  [{ed}] {mcpPath}");
-        if (!File.Exists(mcpPath))
+        Console.WriteLine($"  [{mcp.Label}] {mcp.Path}");
+        if (!File.Exists(mcp.Path))
         {
             PrintInfo("    (file not found)");
             continue;
         }
-        var config = ReadMcpConfig(mcpPath);
-        if (config?.Servers == null || config.Servers.Count == 0)
+        var servers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
+        if (servers.Count == 0)
         {
             PrintInfo("    (no servers)");
             continue;
         }
-        foreach (var (name, node) in config.Servers)
+        foreach (var (name, node) in servers)
         {
             var type = node?["type"]?.GetValue<string>() ?? "unknown";
             Console.WriteLine($"    {name} ({type})");
@@ -1024,40 +1057,32 @@ int MergeServersIntoConfig(Dictionary<string, JsonNode?> userServers,
     return count;
 }
 
-/// <summary>Install MCP servers into user mcp.json across editions, with backup tracking.</summary>
-/// <returns>Total number of servers merged across all editions.</returns>
-int InstallMcpServersToEditions(Dictionary<string, JsonNode?> servers, string edition,
+/// <summary>Install MCP servers into configs across detected targets, with backup tracking.</summary>
+/// <returns>Total number of servers merged across all targets.</returns>
+int InstallMcpServersToTargets(Dictionary<string, JsonNode?> servers, string target, string edition,
     bool dryRun, bool verbose, HashSet<string>? backedUp = null)
 {
     int total = 0;
-    foreach (var ed in GetEditions(edition))
+    foreach (var mcp in GetMcpTargetPaths(target, edition))
     {
-        Console.WriteLine($"    [{ed}]");
-        var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
+        Console.WriteLine($"    [{mcp.Label}]");
+        var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
+        if (File.Exists(mcp.Path) && !dryRun && (backedUp == null || backedUp.Add(mcp.Path)))
+            BackupFile(mcp.Path, "mcp", mcp.Label);
 
-        McpConfig? userConfig = null;
-        if (File.Exists(mcpPath))
-        {
-            if (!dryRun && (backedUp == null || backedUp.Add(mcpPath)))
-                BackupFile(mcpPath, "mcp", ed);
-            userConfig = ReadMcpConfig(mcpPath);
-        }
-        userConfig ??= new McpConfig();
-        userConfig.Servers ??= new Dictionary<string, JsonNode?>();
-
-        total += MergeServersIntoConfig(userConfig.Servers, servers, dryRun, verbose);
+        total += MergeServersIntoConfig(userServers, servers, dryRun, verbose);
 
         if (!dryRun)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(mcpPath)!);
-            WriteMcpConfig(mcpPath, userConfig);
-            PrintSuccess($"      Wrote: {mcpPath}");
+            Directory.CreateDirectory(Path.GetDirectoryName(mcp.Path)!);
+            WriteMcpServers(mcp.Path, mcp.WrapperKey, userServers);
+            PrintSuccess($"      Wrote: {mcp.Path}");
         }
     }
     return total;
 }
 
-void RunMcpInstall(string edition, bool exact, bool dryRun, bool verbose)
+void RunMcpInstall(string edition, string target, bool exact, bool dryRun, bool verbose)
 {
     PrintHeader("MCP install");
     var templatePath = Path.Combine(repoRoot, "template.mcp.json");
@@ -1074,32 +1099,25 @@ void RunMcpInstall(string edition, bool exact, bool dryRun, bool verbose)
         return;
     }
 
-    foreach (var ed in GetEditions(edition))
+    foreach (var mcp in GetMcpTargetPaths(target, edition))
     {
-        Console.WriteLine($"  [{ed}]");
-        var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
+        Console.WriteLine($"  [{mcp.Label}]");
+        var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
 
-        McpConfig? userConfig = null;
-        if (File.Exists(mcpPath))
-        {
-            if (!dryRun) BackupFile(mcpPath, "mcp", ed);
-            userConfig = ReadMcpConfig(mcpPath);
-        }
-        userConfig ??= new McpConfig();
-        userConfig.Servers ??= new Dictionary<string, JsonNode?>();
+        if (File.Exists(mcp.Path) && !dryRun) BackupFile(mcp.Path, "mcp", mcp.Label);
 
-        MergeServersIntoConfig(userConfig.Servers, template.Servers, dryRun, verbose);
+        MergeServersIntoConfig(userServers, template.Servers, dryRun, verbose);
 
         // Exact mode: remove servers not in template
         if (exact)
         {
             var templateNames = template.Servers.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var toRemove = userConfig.Servers.Keys
+            var toRemove = userServers.Keys
                 .Where(k => !templateNames.Contains(k))
                 .ToList();
             foreach (var name in toRemove)
             {
-                userConfig.Servers.Remove(name);
+                userServers.Remove(name);
                 if (dryRun)
                     PrintInfo($"    Would remove (not in template): {name}");
                 else
@@ -1109,14 +1127,14 @@ void RunMcpInstall(string edition, bool exact, bool dryRun, bool verbose)
 
         if (!dryRun)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(mcpPath)!);
-            WriteMcpConfig(mcpPath, userConfig);
-            PrintSuccess($"    Wrote: {mcpPath}");
+            Directory.CreateDirectory(Path.GetDirectoryName(mcp.Path)!);
+            WriteMcpServers(mcp.Path, mcp.WrapperKey, userServers);
+            PrintSuccess($"    Wrote: {mcp.Path}");
         }
     }
 }
 
-void RunMcpUninstall(string edition, bool dryRun, bool verbose)
+void RunMcpUninstall(string edition, string target, bool dryRun, bool verbose)
 {
     PrintHeader("MCP uninstall");
     var templatePath = Path.Combine(repoRoot, "template.mcp.json");
@@ -1129,23 +1147,22 @@ void RunMcpUninstall(string edition, bool dryRun, bool verbose)
     var template = ReadMcpConfig(templatePath);
     if (template?.Servers == null) return;
 
-    foreach (var ed in GetEditions(edition))
+    foreach (var mcp in GetMcpTargetPaths(target, edition))
     {
-        Console.WriteLine($"  [{ed}]");
-        var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
-        if (!File.Exists(mcpPath))
+        Console.WriteLine($"  [{mcp.Label}]");
+        if (!File.Exists(mcp.Path))
         {
-            PrintInfo("    (no mcp.json)");
+            PrintInfo("    (file not found)");
             continue;
         }
 
-        if (!dryRun) BackupFile(mcpPath, "mcp", ed);
-        var userConfig = ReadMcpConfig(mcpPath);
-        if (userConfig?.Servers == null) continue;
+        if (!dryRun) BackupFile(mcp.Path, "mcp", mcp.Label);
+        var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
+        if (userServers.Count == 0) continue;
 
         foreach (var name in template.Servers.Keys)
         {
-            if (userConfig.Servers.Remove(name))
+            if (userServers.Remove(name))
             {
                 if (dryRun)
                     PrintInfo($"    Would remove: {name}");
@@ -1158,11 +1175,11 @@ void RunMcpUninstall(string edition, bool dryRun, bool verbose)
             }
         }
 
-        if (!dryRun) WriteMcpConfig(mcpPath, userConfig);
+        if (!dryRun) WriteMcpServers(mcp.Path, mcp.WrapperKey, userServers);
     }
 }
 
-void RunMcpDiff(string edition, bool verbose)
+void RunMcpDiff(string edition, string target, bool verbose)
 {
     PrintHeader("MCP diff");
     var templatePath = Path.Combine(repoRoot, "template.mcp.json");
@@ -1175,18 +1192,16 @@ void RunMcpDiff(string edition, bool verbose)
     var template = ReadMcpConfig(templatePath);
     if (template?.Servers == null) return;
 
-    foreach (var ed in GetEditions(edition))
+    foreach (var mcp in GetMcpTargetPaths(target, edition))
     {
-        Console.WriteLine($"  [{ed}]");
-        var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
-        if (!File.Exists(mcpPath))
+        Console.WriteLine($"  [{mcp.Label}]");
+        if (!File.Exists(mcp.Path))
         {
-            PrintInfo("    (no mcp.json — all template servers would be added)");
+            PrintInfo("    (no config — all template servers would be added)");
             continue;
         }
 
-        var userConfig = ReadMcpConfig(mcpPath);
-        var userServers = userConfig?.Servers ?? new Dictionary<string, JsonNode?>();
+        var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
 
         bool hasDiffs = false;
         foreach (var (name, config) in template.Servers)
@@ -1220,7 +1235,7 @@ void RunMcpDiff(string edition, bool verbose)
 // Plugin Handlers (unified plugin group operations)
 // ============================================================================
 
-void RunPluginInstall(string? pluginName, bool force, bool dryRun, bool verbose, string edition, string scope)
+void RunPluginInstall(string? pluginName, bool force, bool dryRun, bool verbose, string edition, string scope, string target = "auto")
 {
     var plugins = GetPluginsOrWarn(pluginName);
     if (plugins.Count == 0) return;
@@ -1235,7 +1250,7 @@ void RunPluginInstall(string? pluginName, bool force, bool dryRun, bool verbose,
         var skills = GetSourceSkills(name);
         if (skills.Count > 0)
         {
-            RunSkillsInstall(false, force, dryRun, verbose, name, null, scope);
+            RunSkillsInstall(false, force, dryRun, verbose, name, null, scope, target);
             skillCount = skills.Count;
         }
 
@@ -1243,7 +1258,7 @@ void RunPluginInstall(string? pluginName, bool force, bool dryRun, bool verbose,
         var agents = GetSourceAgents(name);
         if (agents.Count > 0)
         {
-            RunAgentsInstall(false, force, dryRun, verbose, name, scope);
+            RunAgentsInstall(false, force, dryRun, verbose, name, scope, target);
             agentCount = agents.Count;
         }
 
@@ -1252,7 +1267,7 @@ void RunPluginInstall(string? pluginName, bool force, bool dryRun, bool verbose,
         if (mcpServers != null && mcpServers.Count > 0)
         {
             Console.WriteLine($"  MCP servers ({mcpServers.Count}):");
-            mcpCount += InstallMcpServersToEditions(mcpServers, edition, dryRun, verbose, backedUp);
+            mcpCount += InstallMcpServersToTargets(mcpServers, target, edition, dryRun, verbose, backedUp);
         }
 
         // LSP servers (reported but not installed — managed via plugin system)
@@ -1333,7 +1348,7 @@ void RunPluginList(string? pluginName, bool verbose)
     }
 }
 
-void RunPluginDiff(string? pluginName, bool verbose, string edition, string scope)
+void RunPluginDiff(string? pluginName, bool verbose, string edition, string scope, string target = "auto")
 {
     var plugins = GetPluginsOrWarn(pluginName);
     if (plugins.Count == 0) return;
@@ -1347,18 +1362,20 @@ void RunPluginDiff(string? pluginName, bool verbose, string edition, string scop
         var skills = GetSourceSkills(name);
         if (skills.Count > 0)
         {
-            var targetDir = GetSkillsTargetDir(scope);
-            Console.WriteLine($"  Skills:");
-            foreach (var (_, assetName, assetPath) in skills)
+            foreach (var (tlabel, tdir) in GetSkillsTargetDirs(scope, target))
             {
-                var dst = Path.Combine(targetDir, Path.GetFileName(assetPath));
-                if (!Directory.Exists(dst))
+                Console.WriteLine($"  Skills [{tlabel}]:");
+                foreach (var (_, assetName, assetPath) in skills)
                 {
-                    Console.WriteLine($"    + {assetName} (not installed)");
-                    hasDiffs = true;
+                    var dst = Path.Combine(tdir, Path.GetFileName(assetPath));
+                    if (!Directory.Exists(dst))
+                    {
+                        Console.WriteLine($"    + {assetName} (not installed)");
+                        hasDiffs = true;
+                    }
+                    else if (verbose)
+                        PrintInfo($"    = {assetName}");
                 }
-                else if (verbose)
-                    PrintInfo($"    = {assetName}");
             }
         }
 
@@ -1366,18 +1383,20 @@ void RunPluginDiff(string? pluginName, bool verbose, string edition, string scop
         var agents = GetSourceAgents(name);
         if (agents.Count > 0)
         {
-            Console.WriteLine($"  Agents:");
-            var targetDir = GetAgentsTargetDir(scope);
-            foreach (var (_, assetName, assetPath) in agents)
+            foreach (var (tlabel, tdir) in GetAgentsTargetDirs(scope, target))
             {
-                var dst = Path.Combine(targetDir, Path.GetFileName(assetPath));
-                if (!File.Exists(dst))
+                Console.WriteLine($"  Agents [{tlabel}]:");
+                foreach (var (_, assetName, assetPath) in agents)
                 {
-                    Console.WriteLine($"    + {assetName} (not installed)");
-                    hasDiffs = true;
+                    var dst = Path.Combine(tdir, Path.GetFileName(assetPath));
+                    if (!File.Exists(dst))
+                    {
+                        Console.WriteLine($"    + {assetName} (not installed)");
+                        hasDiffs = true;
+                    }
+                    else if (verbose)
+                        PrintInfo($"    = {assetName}");
                 }
-                else if (verbose)
-                    PrintInfo($"    = {assetName}");
             }
         }
 
@@ -1386,11 +1405,10 @@ void RunPluginDiff(string? pluginName, bool verbose, string edition, string scop
         if (mcpServers != null && mcpServers.Count > 0)
         {
             Console.WriteLine($"  MCP Servers:");
-            foreach (var ed in GetEditions(edition))
+            foreach (var mcp in GetMcpTargetPaths(target, edition))
             {
-                Console.WriteLine($"    [{ed}]");
-                var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
-                if (!File.Exists(mcpPath))
+                Console.WriteLine($"    [{mcp.Label}]");
+                if (!File.Exists(mcp.Path))
                 {
                     foreach (var srvName in mcpServers.Keys)
                     {
@@ -1399,8 +1417,7 @@ void RunPluginDiff(string? pluginName, bool verbose, string edition, string scop
                     }
                     continue;
                 }
-                var userConfig = ReadMcpConfig(mcpPath);
-                var userServers = userConfig?.Servers ?? new Dictionary<string, JsonNode?>();
+                var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
                 foreach (var (srvName, config) in mcpServers)
                 {
                     if (!userServers.ContainsKey(srvName))
@@ -1436,7 +1453,7 @@ void RunPluginDiff(string? pluginName, bool verbose, string edition, string scop
     }
 }
 
-void RunPluginUninstall(string? pluginName, bool dryRun, bool verbose, string edition, string scope)
+void RunPluginUninstall(string? pluginName, bool dryRun, bool verbose, string edition, string scope, string target = "auto")
 {
     var plugins = GetPluginsOrWarn(pluginName);
     if (plugins.Count == 0) return;
@@ -1449,31 +1466,30 @@ void RunPluginUninstall(string? pluginName, bool dryRun, bool verbose, string ed
         // Skills
         var skills = GetSourceSkills(name);
         if (skills.Count > 0)
-            RunSkillsUninstall(dryRun, verbose, name, null, scope);
+            RunSkillsUninstall(dryRun, verbose, name, null, scope, target);
 
         // Agents
         var agents = GetSourceAgents(name);
         if (agents.Count > 0)
-            RunAgentsUninstall(dryRun, verbose, name, scope);
+            RunAgentsUninstall(dryRun, verbose, name, scope, target);
 
         // MCP servers from plugin.json
         var (mcpServers, _) = ReadPluginServers(name);
         if (mcpServers != null && mcpServers.Count > 0)
         {
             Console.WriteLine($"  MCP servers:");
-            foreach (var ed in GetEditions(edition))
+            foreach (var mcp in GetMcpTargetPaths(target, edition))
             {
-                Console.WriteLine($"    [{ed}]");
-                var mcpPath = Path.Combine(GetVSCodeUserDir(ed), "mcp.json");
-                if (!File.Exists(mcpPath)) continue;
+                Console.WriteLine($"    [{mcp.Label}]");
+                if (!File.Exists(mcp.Path)) continue;
 
-                if (!dryRun && backedUp.Add(mcpPath)) BackupFile(mcpPath, "mcp", ed);
-                var userConfig = ReadMcpConfig(mcpPath);
-                if (userConfig?.Servers == null) continue;
+                if (!dryRun && backedUp.Add(mcp.Path)) BackupFile(mcp.Path, "mcp", mcp.Label);
+                var userServers = ReadMcpServers(mcp.Path, mcp.WrapperKey);
+                if (userServers.Count == 0) continue;
 
                 foreach (var srvName in mcpServers.Keys)
                 {
-                    if (userConfig.Servers.Remove(srvName))
+                    if (userServers.Remove(srvName))
                     {
                         if (dryRun)
                             PrintInfo($"      Would remove: {srvName}");
@@ -1484,7 +1500,7 @@ void RunPluginUninstall(string? pluginName, bool dryRun, bool verbose, string ed
                         PrintInfo($"      Not present: {srvName}");
                 }
 
-                if (!dryRun) WriteMcpConfig(mcpPath, userConfig);
+                if (!dryRun) WriteMcpServers(mcp.Path, mcp.WrapperKey, userServers);
             }
         }
     }
@@ -1795,6 +1811,93 @@ string GetAgentsTargetDir(string scope = "personal")
         ".copilot", "agents");
 }
 
+// ============================================================================
+// Multi-tool target detection
+// ============================================================================
+
+List<ToolTarget> DetectTargets(string target)
+{
+    var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    var copilotDir = Path.Combine(home, ".copilot");
+    var claudeDir = Path.Combine(home, ".claude");
+
+    if (target == "copilot") return [new("Copilot CLI", copilotDir)];
+    if (target == "claude") return [new("Claude Code", claudeDir)];
+    if (target == "vscode") return []; // VS Code is handled separately via edition
+    if (target == "all")
+        return [new("Copilot CLI", copilotDir), new("Claude Code", claudeDir)];
+
+    // auto: detect which tools are installed
+    var targets = new List<ToolTarget>();
+    if (Directory.Exists(copilotDir))
+        targets.Add(new("Copilot CLI", copilotDir));
+    if (Directory.Exists(claudeDir))
+        targets.Add(new("Claude Code", claudeDir));
+    if (targets.Count == 0)
+        targets.Add(new("Copilot CLI", copilotDir)); // fallback
+    return targets;
+}
+
+bool TargetIncludesVSCode(string target)
+{
+    if (target is "vscode" or "all") return true;
+    if (target is "copilot" or "claude") return false;
+    // auto: check if any VS Code user dir exists
+    try { GetVSCodeUserDir("stable"); return true; }
+    catch { }
+    try { GetVSCodeUserDir("insiders"); return true; }
+    catch { }
+    return false;
+}
+
+List<(string label, string dir)> GetSkillsTargetDirs(string scope, string target)
+{
+    if (scope == "project")
+        return [("project", Path.Combine(FindGitRoot(), ".github", "skills"))];
+    return DetectTargets(target)
+        .Select(t => (t.Name, Path.Combine(t.RootDir, "skills")))
+        .ToList();
+}
+
+List<(string label, string dir)> GetAgentsTargetDirs(string scope, string target)
+{
+    if (scope == "project")
+        return [("project", Path.Combine(FindGitRoot(), ".github", "agents"))];
+    // Only Copilot CLI supports personal agents; Claude uses project-level only
+    return DetectTargets(target)
+        .Where(t => t.Name == "Copilot CLI")
+        .Select(t => (t.Name, Path.Combine(t.RootDir, "agents")))
+        .ToList();
+}
+
+List<McpTarget> GetMcpTargetPaths(string target, string edition)
+{
+    var result = new List<McpTarget>();
+    var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+    bool includeCopilot = target is "copilot" or "all" ||
+        (target == "auto" && Directory.Exists(Path.Combine(home, ".copilot")));
+    bool includeClaude = target is "claude" or "all" ||
+        (target == "auto" && Directory.Exists(Path.Combine(home, ".claude")));
+    bool includeVSCode = TargetIncludesVSCode(target);
+
+    if (includeCopilot)
+        result.Add(new("Copilot CLI", Path.Combine(home, ".copilot", "mcp-config.json"), "mcpServers"));
+    if (includeClaude)
+        result.Add(new("Claude Code", Path.Combine(home, ".claude", "settings.local.json"), "mcpServers"));
+    if (includeVSCode)
+    {
+        foreach (var ed in GetEditions(edition))
+            result.Add(new($"VS Code ({ed})", Path.Combine(GetVSCodeUserDir(ed), "mcp.json"), "servers"));
+    }
+
+    // Fallback: if nothing detected, default to Copilot CLI
+    if (result.Count == 0)
+        result.Add(new("Copilot CLI", Path.Combine(home, ".copilot", "mcp-config.json"), "mcpServers"));
+
+    return result;
+}
+
 string? GetGitRemoteUrl()
 {
     try
@@ -1964,6 +2067,40 @@ void WriteMcpConfig(string path, McpConfig config)
     File.WriteAllText(path, json);
 }
 
+/// <summary>Read MCP servers from a JSON file using the specified wrapper key.</summary>
+Dictionary<string, JsonNode?> ReadMcpServers(string path, string wrapperKey)
+{
+    if (!File.Exists(path)) return new();
+    var root = ReadJsoncNode(path) as JsonObject;
+    if (root == null) return new();
+    var serversNode = root[wrapperKey] as JsonObject;
+    if (serversNode == null) return new();
+    var result = new Dictionary<string, JsonNode?>(StringComparer.OrdinalIgnoreCase);
+    foreach (var prop in serversNode)
+        result[prop.Key] = prop.Value?.DeepClone();
+    return result;
+}
+
+/// <summary>Write MCP servers to a JSON file under the specified wrapper key, preserving other content.</summary>
+void WriteMcpServers(string path, string wrapperKey, Dictionary<string, JsonNode?> servers)
+{
+    JsonObject root;
+    if (File.Exists(path))
+    {
+        root = (ReadJsoncNode(path) as JsonObject) ?? new JsonObject();
+    }
+    else
+    {
+        root = new JsonObject();
+    }
+    var serversObj = new JsonObject();
+    foreach (var (name, config) in servers)
+        serversObj[name] = config?.DeepClone();
+    root[wrapperKey] = serversObj;
+    var options = new JsonSerializerOptions { WriteIndented = true };
+    File.WriteAllText(path, root.ToJsonString(options));
+}
+
 // ============================================================================
 // Process Helpers
 // ============================================================================
@@ -2026,6 +2163,9 @@ void PrintInfo(string text)
 // ============================================================================
 // JSON Models & Source Generator Context
 // ============================================================================
+
+record ToolTarget(string Name, string RootDir);
+record McpTarget(string Label, string Path, string WrapperKey);
 
 /// <summary>Represents the structure of an mcp.json configuration file.</summary>
 class McpConfig
