@@ -88,13 +88,21 @@ For interpreting error categories, crash recovery, and canceled jobs: [reference
 
 For generating recommendations from `[CI_ANALYSIS_SUMMARY]` JSON: [references/recommendation-generation.md](references/recommendation-generation.md)
 
+## Presenting Results
+
+> 🚨 **Keep tables narrow — 4 short columns max (# | Job | Verdict | Issue).** Put error descriptions, work item lists, and evidence in **detail bullets below the table**, not in cells. Wide tables wrap and become unreadable in terminals.
+
+> 🚨 **Use markdown links** for PRs (`[#121195](url)`), builds (`[Build 1305302](url)`), and jobs (`[job name](azdo-job-url)`). The script output and MCP tools provide URLs — thread them through.
+
+Lead with a 1-2 sentence verdict, then the summary table, then detail bullets (one per failure), then recommended actions. For the full format example: [references/recommendation-generation.md](references/recommendation-generation.md).
+
 ## Anti-Patterns
 
-> 🚨 **Every failure verdict needs evidence — no "Likely flaky" without proof.** Each row in your output table must cite a specific source: known issue number, Build Analysis match, or target-branch verification. If Build Analysis didn't match it and you haven't verified the target branch, the verdict is **"Unmatched — needs investigation"**, not "Likely flaky." A test that *looks* like it could be flaky is not the same as one you've *verified* is flaky.
+> 🚨 **Every failure verdict needs evidence — no "Likely flaky" without proof.** Each row in your summary table must cite a specific source: known issue number, Build Analysis match, or target-branch verification. If Build Analysis didn't match it and you haven't verified the target branch, the verdict is **"Unmatched — needs investigation"**, not "Likely flaky." A test that *looks* like it could be flaky is not the same as one you've *verified* is flaky.
 
 > ❌ **Don't label failures "infrastructure" without evidence.** Requires: Build Analysis match, identical failure on target branch, or confirmed outage. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
 
-> ❌ **Don't dismiss timed-out builds.** A build "failed" due to AzDO timeout can have 100% passing Helix work items. Check `hlx_status` before concluding failure.
+> ❌ **Don't dismiss timed-out builds.** A build "failed" due to AzDO timeout can have 100% passing Helix work items. Check Helix job status before concluding failure.
 
 > ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs request *different* packages. Check *which* package and *why* before assuming feed delay.
 

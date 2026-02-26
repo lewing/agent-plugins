@@ -1,0 +1,32 @@
+{
+  "name": "roslyn-lsp",
+  "version": "0.1.0",
+  "description": "Roslyn C# language server for code intelligence in Copilot CLI",
+  "author": {
+    "name": "lewing"
+  },
+  "license": "MIT",
+  "keywords": [
+    "roslyn",
+    "csharp",
+    "lsp",
+    "language-server"
+  ],
+  "skills": [],
+  "lspServers": {
+    "csharp": {
+      "command": "dotnet",
+      "args": [
+        "dnx",
+        "--yes",
+        "roslyn-language-server",
+        "--prerelease",
+        "--stdio",
+        "--autoLoadProjects"
+      ],
+      "fileExtensions": {
+        ".cs": "csharp"
+      }
+    }
+  }
+}

@@ -42,11 +42,11 @@ Do **NOT** use this skill when:
 
 Identify the merge commit in repo A:
 - If given a **PR number**: Read the PR to get its merge commit SHA. If you get a 404, try reading it as an issue instead — the number may be an issue, not a PR. If not yet merged, stop — the change hasn't entered the pipeline.
-- If given an **issue number**: Find the linked PR(s) using `search_pull_requests`, then get the merge commit SHA.
+- If given an **issue number**: Search for linked PRs, then get the merge commit SHA.
 - If given a **commit SHA**: Use directly.
 - If given a **description** (e.g., "the async Main change"): Search issues/PRs in the source repo by keyword. If multiple candidates match, present the top 3 and ask the user to confirm before proceeding.
 
-**Resolve "latest build"**: If the user says "latest SDK" without a version, default to `main` (current dev). If they say "latest .NET 10", resolve to the latest build on `.NET 10.0.1xx SDK` channel using `maestro_latest_build`.
+**Resolve "latest build"**: If the user says "latest SDK" without a version, default to `main` (current dev). If they say "latest .NET 10", resolve to the latest build on the `.NET 10.0.1xx SDK` channel.
 
 Determine the **target VMR branch**: Usually `main` for current dev, or `release/X.0.1xx` for a specific version. Resolve using `.NET major = year − 2015`.
 
@@ -57,7 +57,7 @@ Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch. F
 **Determine if the change is included** — practical approaches (try in order):
 1. **Date comparison** (fastest): If the VMR commit date is months after the PR merge date, the change is included — no further checking needed.
 2. **Compare API**: Use GitHub compare endpoint if dates are close (within days).
-3. **list_commits**: Walk recent commits on repo A if compare is unavailable.
+3. **Commit history walk**: List recent commits on repo A if compare is unavailable.
 
 - **If repo A's SHA in source-manifest is at or past the merge commit** → VMR has it. Proceed to Step 3.
 - **If not** → The change hasn't reached the VMR yet. Check forward flow: is there an open PR from repo A into `dotnet/dotnet`? If yes, it's in transit.

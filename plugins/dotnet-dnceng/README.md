@@ -44,7 +44,7 @@ Analyze CI build and test status from Azure DevOps and Helix for dotnet reposito
 
 ### [flow-analysis](skills/flow-analysis/SKILL.md)
 
-Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FOR: investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues, checking overall flow status for a repo, diagnosing why backflow PRs are missing or blocked, subscription health, build freshness, URLs containing dotnet-maestro or "Source code updates from dotnet/dotnet". DO NOT USE FOR: CI build failures (use ci-analysis skill), code review (use code-review skill), general PR investigation without codeflow context, tracing whether a specific commit/PR has reached another repo (use flow-tracing skill). INVOKES: maestro and GitHub MCP tools, Get-FlowHealth.ps1 script.
+Analyze VMR codeflow health using maestro MCP tools and GitHub MCP tools. USE FOR: investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues, checking overall flow status for a repo, diagnosing why backflow PRs are missing or blocked, subscription health, build freshness, URLs containing dotnet-maestro or "Source code updates from dotnet/dotnet". DO NOT USE FOR: CI build failures (use ci-analysis skill), code review (use code-review skill), general PR investigation without codeflow context, tracing whether a specific commit/PR has reached another repo (use flow-tracing skill). INVOKES: maestro and GitHub MCP tools, flow-health.cs script.
 
 **References:**
 - [vmr-build-topology.md](skills/flow-analysis/references/vmr-build-topology.md)

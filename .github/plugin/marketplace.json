@@ -3,7 +3,7 @@
   "metadata": {
     "description": "Public skills by @lewing \u2014 CI analysis, code review, trusted publishing",
     "version": "0.1.0",
-    "sourceCommit": "8131303"
+    "sourceCommit": "ba7840b"
   },
   "owner": {
     "name": "lewing"
@@ -25,6 +25,12 @@
       "name": "skill-trainer",
       "source": "plugins/skill-trainer",
       "description": "Skills for building, testing, and training Copilot CLI skills \u2014 patterns, anti-patterns, eval methodology",
+      "version": "0.1.0"
+    },
+    {
+      "name": "roslyn-lsp",
+      "source": "plugins/roslyn-lsp",
+      "description": "Roslyn C# language server for code intelligence in Copilot CLI",
       "version": "0.1.0"
     },
     {

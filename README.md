@@ -1,6 +1,6 @@
 # lewing/agent-plugins
 
-![plugins](https://img.shields.io/badge/plugins-4-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-3-purple)
+![plugins](https://img.shields.io/badge/plugins-5-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-3-purple)
 
 ![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-compatible-black?logo=github) ![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-cc785c?logo=anthropic)
 
@@ -87,6 +87,12 @@ Skills for building, testing, and training Copilot CLI skills — patterns, anti
 | [skill-trainer-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/SKILL.md) | [eval-integration](plugins/skill-trainer/skills/skill-trainer-knowledge/references/eval-integration.md), [skill-builder-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/references/skill-builder-knowledge.md), [training-methodology](plugins/skill-trainer/skills/skill-trainer-knowledge/references/training-methodology.md) |
 
 **Agents:** [SkillResearcher.agent](plugins/skill-trainer/agents/SkillResearcher.agent.md), [SkillTrainer.agent](plugins/skill-trainer/agents/SkillTrainer.agent.md)
+
+### [roslyn-lsp](plugins/roslyn-lsp/)
+
+Roslyn C# language server for code intelligence in Copilot CLI
+
+**LSP Servers:** csharp
 
 ### [lewing](plugins/lewing/)
 

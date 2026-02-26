@@ -11,12 +11,12 @@ description: >
   (use code-review skill), general PR investigation without codeflow context,
   tracing whether a specific commit/PR has reached another repo (use
   flow-tracing skill).
-  INVOKES: maestro and GitHub MCP tools, Get-FlowHealth.ps1 script.
+  INVOKES: maestro and GitHub MCP tools, flow-health.cs script.
 ---
 
 # Flow Analysis
 
-Analyze VMR codeflow PR health using **scripts** for data collection and **MCP tools** for enrichment and remediation. For single-PR analysis, `Get-CodeflowStatus.ps1` does comprehensive data collection (VMR commit comparison, forward flow discovery, staleness detection); maestro MCP tools provide subscription triggering and build freshness. For repo-wide flow health, `Get-FlowHealth.ps1` handles batch GitHub scanning in parallel.
+Analyze VMR codeflow PR health using **scripts** for data collection and **MCP tools** for enrichment and remediation. For single-PR analysis, `Get-CodeflowStatus.ps1` does comprehensive data collection (VMR commit comparison, forward flow discovery, staleness detection); maestro MCP tools provide subscription triggering and build freshness. For repo-wide flow health, `flow-health.cs` handles batch GitHub scanning in parallel.
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed.
 
@@ -32,8 +32,8 @@ Use this skill when:
 
 ## Prerequisites
 
-- **Maestro MCP server** — must be configured (provides `maestro_*` tools). See [lewing/maestro.mcp](https://github.com/lewing/maestro.mcp) for setup.
-- **GitHub CLI (`gh`)** — must be installed and authenticated. Required by `Get-FlowHealth.ps1`.
+- **Maestro MCP server** — provides subscription health, build freshness, and codeflow management. See [lewing/maestro.mcp](https://github.com/lewing/maestro.mcp) for setup.
+- **GitHub CLI (`gh`)** — must be installed and authenticated. Required by `flow-health.cs`.
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ Users refer to channels with shorthand. **.NET major = year − 2015** (2026 →
 | `release/10.0.3xx` | Strip `release/` → `10.0.3xx` | `.NET 10.0.3xx SDK` |
 | `main` | Current dev (major = year − 2015, band = `1xx`) | `.NET 11.0.1xx SDK` |
 
-> ⚠️ **Channel filter requires an exact substring match.** Use the full channel name (e.g., `.NET 11.0.1xx SDK`) when filtering `maestro_codeflow_prs` or `maestro_subscriptions`. Partial names like `.NET 11.0` may not match.
+> ⚠️ **Channel filter requires an exact substring match.** Use the full channel name (e.g., `.NET 11.0.1xx SDK`) when filtering codeflow PRs or subscriptions. Partial names like `.NET 11.0` may not match.
 
 ### SDK Bands and Forward Flow
 
@@ -75,7 +75,7 @@ The **1xx band** has full source-build with runtime forward flow. **2xx/3xx band
 | "Is backflow healthy for X on Y?" | **PR analysis** | `Get-CodeflowStatus.ps1 -Repository -Branch` → read output → MCP enrichment |
 | "Why is this PR stale/blocked?" | **PR analysis** | `Get-CodeflowStatus.ps1 -PrUrl` → read output → MCP enrichment |
 | "What's the flow status across all repos?" | **Codeflow overview** | Subscription health + codeflow PRs + build freshness (MCP tools) |
-| "Full flow health report for X" | **Flow health** | `Get-FlowHealth.ps1` script for batch GitHub scanning + maestro enrichment |
+| "Full flow health report for X" | **Flow health** | `flow-health.cs` script for batch GitHub scanning + maestro enrichment |
 
 ## Codeflow Overview Workflow
 
@@ -106,24 +106,11 @@ For subscriptions that are stale — whether they have a stuck PR or no PR at al
 - Check build freshness to rule out VMR build failures (if builds are stale, it's a VMR issue, not Maestro)
 - For stuck PRs, check the PR's age and recent activity — a PR open >3 days with no progress needs attention
 
-### Step 5: Compute Real Commit Distance
+### Step 5: Get Real Commit Distance
 
-For stale entries showing "~N builds behind", compute the **actual commit distance**:
+For stale entries showing "~N builds behind", request **commit details** when checking subscription health. This returns the actual commit count and recent commit metadata (SHA, message, author, date) — no manual GitHub API calls needed.
 
-**GitHub-hosted repos** — use the compare API (fast, 3 calls per repo):
-1. Get the two builds: `maestro_build` for the "last applied" and "latest available" build IDs from Step 1
-2. Extract the source commit SHAs from each build
-3. Compare: `gh api repos/{owner}/{repo}/compare/{lastCommit}...{latestCommit} --jq '.ahead_by'`
-
-Report the `ahead_by` value as "N commits behind".
-
-**AzDO-hosted repos** (e.g., `dotnet-optimization`) — fall back to script:
-
-```powershell
-./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/runtime" -CheckMissing -Branch "main"
-```
-
-Report `vmrComparison.aheadBy` as "N VMR commits behind". Skip healthy repos.
+Report the commit count as "N commits behind". Use the recent commit list to explain *what* is behind (e.g., "3 commits behind — latest: Fix NuGet restore race condition").
 
 ### Step 6: Enrich with GitHub Data
 
@@ -175,13 +162,13 @@ The script outputs a `[CODEFLOW_SUMMARY]` JSON block followed by a text summary.
    - `status` = overall PR health classification
 
 2. **Use MCP tools only for enrichment** the script can't provide:
-   - `maestro_build_freshness` — check if VMR builds are healthy (channel-level, not per-PR)
-   - `maestro_subscription_history` — timeline of when the subscription got stuck (if script shows STALE)
-   - `maestro_trigger_subscription` — to remediate a stuck subscription (needs subscription ID + build ID from script output)
+   - Check **build freshness** — are VMR builds healthy? (channel-level, not per-PR)
+   - Check **subscription history** — timeline of when the subscription got stuck (if script shows STALE)
+   - **Trigger the subscription** — to remediate a stuck subscription (needs subscription ID + build ID from script output)
 
 3. **Synthesize** script data + MCP enrichment into a diagnosis and recommendation.
 
-> 💡 **No open PR?** If `-Repository`/`-Branch` finds no open backflow PR, the script reports this. Use `maestro_tracked_pr` for the subscription to check Maestro's view, then check the most recently merged matching PR. A missing PR with a healthy subscription means flow is working normally.
+> 💡 **No open PR?** If `-Repository`/`-Branch` finds no open backflow PR, the script reports this. Look up the **tracked PR for the subscription** to check Maestro's view, then check the most recently merged matching PR. A missing PR with a healthy subscription means flow is working normally.
 
 ### Step 3: Trace a Fix (Optional)
 
@@ -191,18 +178,18 @@ To check if a specific fix has reached the PR:
 
 ## Flow Health Workflow (Script + MCP)
 
-Flow health scanning uses a **hybrid approach**: the `Get-FlowHealth.ps1` script handles batch GitHub API calls in parallel, while maestro MCP tools provide subscription and build freshness data.
+Flow health scanning uses a **hybrid approach**: the `flow-health.cs` script handles batch GitHub API calls in parallel, while maestro MCP tools provide subscription and build freshness data.
 
-> 💡 **Why a script for flow health?** Scanning all branches requires 10-30+ parallel GitHub API calls (PR searches, body fetches, VMR HEAD lookups, commit comparisons). The script fires these in parallel using `Start-ThreadJob`; sequential MCP calls would be prohibitively slow.
+> 💡 **Why a script for flow health?** Scanning all branches requires 10-30+ parallel GitHub API calls (PR searches, body fetches, VMR HEAD lookups, commit comparisons). The script fires these in parallel using `Task.Run`; sequential MCP calls would be prohibitively slow.
 
 ### Step 1: Run the Script
 
-```powershell
+```shell
 # Scan all branches for a repo
-./scripts/Get-FlowHealth.ps1 -Repository "dotnet/sdk"
+dotnet ./scripts/flow-health.cs -- dotnet/sdk
 
 # Scan a specific branch only
-./scripts/Get-FlowHealth.ps1 -Repository "dotnet/sdk" -Branch "main"
+dotnet ./scripts/flow-health.cs -- dotnet/sdk --branch main
 ```
 
 The script outputs structured JSON with:
@@ -228,7 +215,7 @@ After the script runs, enrich with maestro data:
 ### Step 3: Synthesize
 
 Combine script output (GitHub PR state) + MCP data (Maestro health) to produce the diagnosis:
-- If multiple branches show `missing` AND `maestro_build_freshness` is stale → VMR build failure (not a Maestro issue)
+- If multiple branches show `missing` AND build freshness is stale → VMR build failure (not a Maestro issue)
 - If one branch is `missing` but builds are fresh → Maestro is stuck, suggest triggering
 - If a branch has `status: "conflict"` → suggest `darc vmr resolve-conflict`
 
@@ -262,7 +249,7 @@ Combine script output (GitHub PR state) + MCP data (Maestro health) to produce t
 
 ### Subscription History Patterns
 
-Check `maestro_subscription_history` to understand failure timelines. Key patterns: one-off `ApplyingUpdates` failures are normal retry; **alternating failures spanning weeks** indicate systemic problems (conflict, CI, blocked forward flow). Long gaps mean disabled subscription or no new builds. See [vmr-codeflow-reference.md](references/vmr-codeflow-reference.md#subscription-history-patterns) for the full pattern catalog.
+Check **subscription history** to understand failure timelines. Key patterns: one-off `ApplyingUpdates` failures are normal retry; **alternating failures spanning weeks** indicate systemic problems (conflict, CI, blocked forward flow). Long gaps mean disabled subscription or no new builds. See [vmr-codeflow-reference.md](references/vmr-codeflow-reference.md#subscription-history-patterns) for the full pattern catalog.
 
 > ❌ **Never assume "Unknown" means healthy.** API failures produce Unknown status — exclude from positive counts.
 
@@ -302,7 +289,7 @@ darc vmr resolve-conflict --subscription <subscription-id>   # Resolve conflicts
 
 When multiple repos are missing backflow simultaneously, the root cause is usually **VMR build failures**, not Maestro:
 
-1. Use `maestro_build_freshness` across multiple channels — if all are stale, VMR builds are broken
+1. Check **build freshness** across multiple channels — if all are stale, VMR builds are broken
 2. Check public VMR CI builds at `dnceng-public/public` pipeline 278 for failures
 3. Search `dotnet/dotnet` issues with `[Operational Issue]` label
 

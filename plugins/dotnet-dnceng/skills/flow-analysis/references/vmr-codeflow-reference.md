@@ -161,13 +161,13 @@ The SDK band determines what flows where. The **1xx band** is the full source-bu
 
 ## Subscription History Patterns
 
-When checking `maestro_subscription_history`, these patterns indicate specific problems:
+When checking subscription history, these patterns indicate specific problems:
 
 - **`ApplyingUpdates` failure**: Maestro couldn't create or update the PR branch — typically a git conflict or API error. If this is a one-off, Maestro will retry on the next build.
 - **`MergingPullRequest` failure**: PR exists but merge failed — usually CI checks blocking auto-merge, or branch protection rules preventing the merge.
 - **Alternating `ApplyingUpdates` / `MergingPullRequest` failures**: A chronic pattern spanning weeks or months indicates a systemic problem — not normal retry. Usually means: (a) an unresolved conflict that recurs on each attempt, (b) persistently failing CI checks, or (c) a forward flow PR blocking backflow. Investigate the PR directly.
 - **Long gap with no entries**: Either the subscription is disabled, the channel has no new builds (check build freshness), or the subscription is on a `None` (manual) update frequency.
-- **Single old failure then silence**: Subscription may have been disabled after a failure, or the channel was frozen after a preview shipped. Check `maestro_subscription` for the enabled/disabled state.
+- **Single old failure then silence**: Subscription may have been disabled after a failure, or the channel was frozen after a preview shipped. Check the subscription's enabled/disabled state.
 
 ## Common Scenarios
 

@@ -36,7 +36,25 @@ Then layer in nuance the heuristic can't capture:
 
 Be direct. Lead with the most important finding. Structure your response as:
 1. **Summary verdict** (1-2 sentences) — Is CI green? Failures PR-related? Known issues?
-2. **Failure details** (2-4 bullets) — what failed, why, evidence
-3. **Recommended actions** (numbered) — retry, fix, investigate. Include `/azp run` commands.
+2. **Failure summary table** — narrow columns only (Job, Verdict, Issue). Keep job names short (drop redundant prefixes like `runtime-dev-innerloop`). Do NOT put error text or work item lists in the table — those go in the detail section below.
+3. **Failure details** — one bullet per failure with error description, affected work items, and evidence
+4. **Recommended actions** (numbered) — retry, fix, investigate. Include `/azp run` commands.
+
+**Use markdown links** for PRs, issues, builds, and jobs so they're clickable: `[#121195](url)`, `[Build 1305302](url)`, `[job name](azdo-job-url)`. The script output and MCP tools provide the URLs — thread them through to your response.
+
+Example layout for step 2+3:
+
+```
+| # | Job | Verdict | Issue |
+|---|-----|---------|-------|
+| 1 | [browser-wasm linux Release WasmBuildTests](https://dev.azure.com/…) | Known flaky ✅ | [#121195](https://github.com/dotnet/runtime/issues/121195) |
+| 2 | [linux-x64 Debug Mono Interpreter LibTests](https://dev.azure.com/…) | Known flaky ✅ | [#100800](https://github.com/dotnet/runtime/issues/100800) |
+| 3 | [coreclr Pri0 Runtime Tests linux x64](https://dev.azure.com/…) | Known flaky ✅ | [#110173](https://github.com/dotnet/runtime/issues/110173) |
+
+**Details:**
+- **#1**: Playwright.TargetClosedException + dbus socket missing in WBT-NoWorkload
+- **#2**: 8 work items (ComInterfaceGen, IntrinsicsInSPC, JSImportGen, …) — all exit code 139 (SIGSEGV), mono interpreter crashes
+- **#3**: stackoverflowtester timeout in baseservices-exceptions — ASSERT: "Target stack has been corrupted"
+```
 
 Synthesize from: JSON summary (structured facts) + human-readable output (details/logs) + Step 0 context (PR type, author intent).
