@@ -106,8 +106,6 @@ Skills for building, testing, and training Copilot CLI skills — patterns, anti
 
 Roslyn C# language server for code intelligence in Copilot CLI
 
-**LSP Servers:** csharp
-
 ### [lewing](plugins/lewing/)
 
 Personal skills by @lewing — stealth Squad setup, NuGet trusted publishing

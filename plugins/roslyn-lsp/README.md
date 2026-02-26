@@ -26,4 +26,4 @@ Or install directly from GitHub:
 
 This plugin configures the following language servers:
 
-- **[csharp](plugin.json#L17-L30)** — `dotnet`
+- **[csharp](.claude-plugin/plugin.json#L17-L30)** — `dotnet`

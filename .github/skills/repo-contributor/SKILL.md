@@ -72,5 +72,5 @@ Every new skill requires updates to **4 locations**:
 |------|------|--------|
 | 1 | `plugins/<group>/skills/<name>/SKILL.md` | Create with `name` + `description` in YAML frontmatter |
 | 2 | `plugins/<group>/plugin.json` | Add path to `"skills"` array |
-| 3 | `.github/plugin/marketplace.json` | Ensure plugin group is listed |
+| 3 | `.claude-plugin/marketplace.json` | Ensure plugin group is listed |
 | 4 | `README.md` | Verify skill appears in Available Plugins |

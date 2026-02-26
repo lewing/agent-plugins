@@ -1,8 +1,14 @@
 {
   "name": "lewing",
-  "description": "Personal skills by @lewing \u2014 stealth Squad setup, NuGet trusted publishing",
   "version": "0.1.0",
+  "description": "Personal skills by @lewing \u2014 stealth Squad setup, NuGet trusted publishing",
   "author": {
     "name": "lewing"
-  }
+  },
+  "license": "MIT",
+  "keywords": null,
+  "skills": [
+    "skills/nuget-trusted-publishing",
+    "skills/stealth-squad"
+  ]
 }
