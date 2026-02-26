@@ -55,6 +55,20 @@ List and manage installed skills:
 /plugin uninstall <plugin-name>@lewing-public
 ```
 
+## CLI Tool
+
+This repo includes a standalone CLI for managing installed skills, agents, and MCP configs outside of the editor plugin commands.
+
+```powershell
+# Requires .NET 10 SDK
+dotnet scripts/plugin-cli.cs -- all list      # see what's installed
+dotnet scripts/plugin-cli.cs -- all install    # install everything
+dotnet scripts/plugin-cli.cs -- skills diff    # compare repo vs installed
+dotnet scripts/plugin-cli.cs -- all install --exact  # full sync
+```
+
+Run `dotnet scripts/plugin-cli.cs -- --help` for all commands and options.
+
 ## Available Plugins
 
 ### [dotnet-dnceng](plugins/dotnet-dnceng/)
