@@ -4,14 +4,14 @@ Skills and agents for .NET major version bumps: TFM updates, workload manifest c
 
 ## Installation
 
-Via marketplace (supports updates):
+Via marketplace:
 ```
 /plugin marketplace add lewing/agent-plugins
 /plugin install framework-versioning@lewing-public
 /plugin update framework-versioning@lewing-public
 ```
 
-Or install directly from GitHub:
+Or install directly from GitHub (Copilot CLI only):
 ```
 /plugin install lewing/agent-plugins:plugins/framework-versioning
 ```

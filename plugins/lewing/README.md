@@ -4,14 +4,14 @@ Personal skills by @lewing — stealth Squad setup, NuGet trusted publishing
 
 ## Installation
 
-Via marketplace (supports updates):
+Via marketplace:
 ```
 /plugin marketplace add lewing/agent-plugins
 /plugin install lewing@lewing-public
 /plugin update lewing@lewing-public
 ```
 
-Or install directly from GitHub:
+Or install directly from GitHub (Copilot CLI only):
 ```
 /plugin install lewing/agent-plugins:plugins/lewing
 ```

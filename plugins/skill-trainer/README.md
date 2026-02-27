@@ -4,14 +4,14 @@ Skills for building, testing, and training Copilot CLI skills — patterns, anti
 
 ## Installation
 
-Via marketplace (supports updates):
+Via marketplace:
 ```
 /plugin marketplace add lewing/agent-plugins
 /plugin install skill-trainer@lewing-public
 /plugin update skill-trainer@lewing-public
 ```
 
-Or install directly from GitHub:
+Or install directly from GitHub (Copilot CLI only):
 ```
 /plugin install lewing/agent-plugins:plugins/skill-trainer
 ```

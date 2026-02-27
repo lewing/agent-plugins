@@ -12,18 +12,11 @@ A **plugin marketplace** for [Copilot Agent Skills](https://docs.github.com/en/c
 
 ### Claude Code
 
-Via marketplace (supports updates):
 ```
 /plugin marketplace add lewing/agent-plugins
-# Browse available plugins
 /plugin   # → go to Discover tab
 /plugin install <plugin-name>@lewing-public
 /plugin update <plugin-name>@lewing-public
-```
-
-Or install directly from GitHub:
-```
-/plugin install lewing/agent-plugins:plugins/<plugin-name>
 ```
 
 ### GitHub Copilot CLI
