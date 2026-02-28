@@ -22,6 +22,7 @@ string? _cachedGitHubUser = null;
 
 var requiredSettings = new Dictionary<string, JsonNode?>
 {
+    ["chat.plugins.enabled"] = JsonValue.Create(true),
     ["chat.useAgentSkills"] = JsonValue.Create(true),
     ["chat.useNestedAgentsMdFiles"] = JsonValue.Create(true),
     ["chat.customAgentInSubagent.enabled"] = JsonValue.Create(true),
@@ -1642,6 +1643,30 @@ void RunSettingsUpdate(string edition, bool dryRun, bool verbose)
             }
         }
 
+        // Ensure repo marketplace is in chat.plugins.marketplaces array
+        var marketplaceRef = GetMarketplaceRef();
+        if (marketplaceRef != null)
+        {
+            const string mkey = "chat.plugins.marketplaces";
+            var arr = obj[mkey] as JsonArray ?? new JsonArray();
+            if (obj[mkey] is not JsonArray) obj[mkey] = arr;
+            bool found = arr.Any(e => e?.GetValue<string>() == marketplaceRef);
+            if (found)
+            {
+                if (verbose) PrintInfo($"    Already in {mkey}: {marketplaceRef}");
+            }
+            else if (dryRun)
+            {
+                PrintInfo($"    Would add to {mkey}: {marketplaceRef}");
+            }
+            else
+            {
+                arr.Add((JsonNode)JsonValue.Create(marketplaceRef)!);
+                PrintSuccess($"    Added to {mkey}: {marketplaceRef}");
+                changed = true;
+            }
+        }
+
         if (changed && !dryRun)
         {
             WriteJsonNode(settingsPath, node);
@@ -1682,6 +1707,17 @@ void RunSettingsDiff(string edition, bool verbose)
                     Console.WriteLine($"    ~ {key} (differs: current={currentJson}, expected={expectedJson})");
                     hasDiffs = true;
                 }
+            }
+        }
+        // Check marketplace entry
+        var marketplaceRef = GetMarketplaceRef();
+        if (marketplaceRef != null)
+        {
+            var arr = obj["chat.plugins.marketplaces"] as JsonArray;
+            if (arr == null || !arr.Any(e => e?.GetValue<string>() == marketplaceRef))
+            {
+                Console.WriteLine($"    + chat.plugins.marketplaces: {marketplaceRef} (missing)");
+                hasDiffs = true;
             }
         }
         if (!hasDiffs) PrintInfo("    (all required settings present)");
@@ -2030,6 +2066,16 @@ List<McpTarget> GetMcpTargetPaths(string target, string edition)
         result.Add(new("Copilot CLI", Path.Combine(home, ".copilot", "mcp-config.json"), "mcpServers"));
 
     return result;
+}
+
+// Parse git remote URL to owner/repo shorthand for VS Code marketplace setting
+string? GetMarketplaceRef()
+{
+    var url = GetGitRemoteUrl();
+    if (url == null) return null;
+    // https://github.com/owner/repo.git or git@github.com:owner/repo.git
+    var m = System.Text.RegularExpressions.Regex.Match(url, @"github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$");
+    return m.Success ? $"{m.Groups[1].Value}/{m.Groups[2].Value}" : null;
 }
 
 string? GetGitRemoteUrl()
