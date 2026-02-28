@@ -44,7 +44,7 @@ List and manage installed skills:
 
 ### VS Code / VS Code Insiders
 
-Add this marketplace to VS Code via settings or the `/plugins` slash command:
+Add this marketplace to VS Code via settings:
 
 ```jsonc
 // settings.json
@@ -53,8 +53,6 @@ Add this marketplace to VS Code via settings or the `/plugins` slash command:
 }
 
 ```
-
-Or type `/plugins` in Copilot Chat to manage plugins interactively.
 
 ## Uninstall
 
