@@ -55,6 +55,8 @@ List and manage installed skills:
 
 ```
 
+Once configured, type `/plugins` in Copilot Chat to browse and install plugins from the marketplace.
+
 ## Uninstall
 
 ```
