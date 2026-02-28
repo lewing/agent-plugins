@@ -44,16 +44,17 @@ List and manage installed skills:
 
 ### VS Code / VS Code Insiders
 
-VS Code does not have a built-in `/plugin` command. Use the CLI tool included in this repo to install skills to paths VS Code reads:
+Add this marketplace to VS Code via settings or the `/plugins` slash command:
 
-```powershell
-# Requires .NET 10 SDK
-git clone https://github.com/lewing/agent-plugins.git
-cd agent-plugins
-dotnet scripts/plugin-cli.cs -- all install --target vscode --force
+```jsonc
+// settings.json
+{
+  "chat.plugins.marketplaces": ["lewing/agent-plugins"]
+}
+
 ```
 
-This installs skills to `~/.copilot/skills/` which VS Code discovers automatically. See [VS Code Agent Skills docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) for details on skill discovery paths.
+Or type `/plugins` in Copilot Chat to manage plugins interactively.
 
 ## Uninstall
 
