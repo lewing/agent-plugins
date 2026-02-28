@@ -1966,7 +1966,16 @@ bool TargetIncludesVSCode(string target)
 List<(string label, string dir)> GetSkillsTargetDirs(string scope, string target)
 {
     if (scope == "project")
-        return [("project", Path.Combine(FindGitRoot(), ".github", "skills"))];
+    {
+        var root = FindGitRoot();
+        // Claude Code only reads .claude/skills/, not .github/skills/
+        if (target == "claude")
+            return [("project (.claude)", Path.Combine(root, ".claude", "skills"))];
+        if (target == "all")
+            return [("project (.github)", Path.Combine(root, ".github", "skills")),
+                    ("project (.claude)", Path.Combine(root, ".claude", "skills"))];
+        return [("project", Path.Combine(root, ".github", "skills"))];
+    }
     return DetectTargets(target)
         .Select(t => (t.Name, Path.Combine(t.RootDir, "skills")))
         .ToList();
@@ -1975,7 +1984,16 @@ List<(string label, string dir)> GetSkillsTargetDirs(string scope, string target
 List<(string label, string dir)> GetAgentsTargetDirs(string scope, string target)
 {
     if (scope == "project")
-        return [("project", Path.Combine(FindGitRoot(), ".github", "agents"))];
+    {
+        var root = FindGitRoot();
+        // Claude Code only reads .claude/agents/, not .github/agents/
+        if (target == "claude")
+            return [("project (.claude)", Path.Combine(root, ".claude", "agents"))];
+        if (target == "all")
+            return [("project (.github)", Path.Combine(root, ".github", "agents")),
+                    ("project (.claude)", Path.Combine(root, ".claude", "agents"))];
+        return [("project", Path.Combine(root, ".github", "agents"))];
+    }
     // Only Copilot CLI supports personal agents; VS Code and Claude use project-level only
     var dirs = DetectTargets(target)
         .Where(t => t.Name == "Copilot CLI")
