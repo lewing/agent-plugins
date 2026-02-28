@@ -42,13 +42,14 @@ List and manage installed skills:
 /skills reload # pick up newly added skills
 ```
 
-### VS Code / VS Code Insiders
+### VS Code / VS Code Insiders (Preview)
 
-Add this marketplace to VS Code via settings:
+> **Note:** VS Code plugin support is a preview feature. You may need to enable it first.
 
 ```jsonc
 // settings.json
 {
+  "chat.plugins.enabled": true,
   "chat.plugins.marketplaces": ["lewing/agent-plugins"]
 }
 
@@ -57,7 +58,10 @@ Add this marketplace to VS Code via settings:
 ## Uninstall
 
 ```
+# Copilot CLI / Claude Code
 /plugin uninstall <plugin-name>@lewing-public
+
+# VS Code — remove the entry from chat.plugins.marketplaces in settings.json
 ```
 
 ## CLI Tool
