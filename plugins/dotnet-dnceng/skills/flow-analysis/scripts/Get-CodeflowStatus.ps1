@@ -195,29 +195,16 @@ function Get-CodeflowPRHealth {
             try {
                 $checks = ($checksJson -join "`n") | ConvertFrom-Json
                 $codeflowCheck = @($checks | Where-Object { $_.name -match 'Codeflow verification' }) | Select-Object -First 1
-                if (($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') -or $isMergeable) {
-                    # No merge conflict — either Codeflow verification passes or PR is mergeable
+                if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
+                    # Codeflow verification SUCCESS means Maestro has pushed fresh content
                     $hasConflict = $false
-                    # For staleness, check if there are commits after the last staleness warning
-                    if ($hasStaleness) {
-                        $commitsJson = gh pr view $PRNumber -R $Repo --json commits --jq '.commits[-1].committedDate' 2>$null
-                        if ($LASTEXITCODE -eq 0 -and $commitsJson) {
-                            $lastCommitTime = ($commitsJson -join "").Trim()
-                            $lastWarnTime = $null
-                            foreach ($comment in $prDetail.comments) {
-                                if ($comment.author.login -match '^dotnet-maestro' -and $comment.body -match 'codeflow cannot continue|the source repository has received code changes') {
-                                    $warnDt = [DateTimeOffset]::Parse($comment.createdAt).UtcDateTime
-                                    if (-not $lastWarnTime -or $warnDt -gt $lastWarnTime) {
-                                        $lastWarnTime = $warnDt
-                                    }
-                                }
-                            }
-                            $commitDt = if ($lastCommitTime) { [DateTimeOffset]::Parse($lastCommitTime).UtcDateTime } else { $null }
-                            if ($lastWarnTime -and $commitDt -and $commitDt -gt $lastWarnTime) {
-                                $hasStaleness = $false
-                            }
-                        }
-                    }
+                    $hasStaleness = $false
+                }
+                elseif ($isMergeable) {
+                    # PR is mergeable (no git conflicts) but staleness is a separate concern.
+                    # Merging main into the PR branch resolves git conflicts but does NOT
+                    # resolve codeflow staleness — only Maestro force-push does that.
+                    $hasConflict = $false
                 }
             } catch { }
         }
@@ -1965,9 +1952,26 @@ $summary.warnings = [ordered]@{
 # Commits
 $manualCommitCount = if ($manualCommits) { $manualCommits.Count } else { 0 }
 $codeflowLikeCount = if ($codeflowLikeManualCommits) { $codeflowLikeManualCommits.Count } else { 0 }
+$mergeCommitCount = if ($mergeCommits) { $mergeCommits.Count } else { 0 }
+$mergeCommitDetails = @()
+if ($mergeCommits) {
+    foreach ($mc in $mergeCommits) {
+        $mcAuthor = if ($mc.authors -and $mc.authors.Count -gt 0) {
+            if ($mc.authors[0].login) { $mc.authors[0].login } else { $mc.authors[0].name }
+        } else { "unknown" }
+        $mergeCommitDetails += [ordered]@{
+            sha     = Get-ShortSha $mc.oid 8
+            author  = $mcAuthor
+            date    = $mc.committedDate
+            message = $mc.messageHeadline
+        }
+    }
+}
 $summary.commits = [ordered]@{
     total                   = if ($prCommits) { $prCommits.Count } else { 0 }
     manual                  = $manualCommitCount
+    mergeCommits            = $mergeCommitCount
+    mergeCommitDetails      = $mergeCommitDetails
     codeflowLikeManual      = $codeflowLikeCount
 }
 

@@ -47,7 +47,7 @@ For **investigating a specific PR** — use PR Analysis (`Get-CodeflowStatus.ps1
 
 - **Backflow** (VMR → product repo): PRs titled `[branch] Source code updates from dotnet/dotnet`
 - **Forward flow** (product repo → VMR): PRs titled `[branch] Source code updates from dotnet/<repo>`
-- **Staleness**: Forward flow merging while backflow PR is open blocks further updates
+- **Staleness**: Forward flow merging while backflow PR is open blocks further updates. **Merging `main` into the PR branch does NOT resolve staleness** — it only fixes git conflicts. The only resolutions are: merge the PR as-is, close it, or force trigger the subscription.
 - **VMR backflow vs dependency subs**: Don't confuse stuck dependency subscriptions (from product repos) with VMR backflow problems (from `dotnet/dotnet`). See [vmr-codeflow-reference.md](references/vmr-codeflow-reference.md#vmr-backflow-vs-dependency-subscriptions) for details.
 
 ## Channel Resolution
@@ -159,6 +159,7 @@ The script outputs a `[CODEFLOW_SUMMARY]` JSON block followed by a text summary.
    - `vmrComparison.aheadBy` = how far behind (this is VMR commits, NOT builds)
    - `forwardFlow.prs` = what's blocking backflow (open forward flow = blocked by design)
    - `warnings` = staleness/conflict details from Maestro comments
+   - `commits.mergeCommitDetails` = merge commits on the PR (who merged `main` and when — note: merging `main` does NOT resolve staleness)
    - `status` = overall PR health classification
 
 2. **Use MCP tools only for enrichment** the script can't provide:
