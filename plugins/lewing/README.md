@@ -4,6 +4,8 @@ Personal skills by @lewing — stealth Squad setup, NuGet trusted publishing
 
 ## Installation
 
+### Copilot CLI / Claude Code
+
 Via marketplace:
 ```
 /plugin marketplace add lewing/agent-plugins
@@ -16,10 +18,27 @@ Or install directly from GitHub (Copilot CLI only):
 /plugin install lewing/agent-plugins:plugins/lewing
 ```
 
+### VS Code (Preview)
+
+Add the marketplace to your VS Code settings:
+
+```jsonc
+// settings.json
+{
+  "chat.plugins.enabled": true,
+  "chat.plugins.marketplaces": ["lewing/agent-plugins"]
+}
+```
+
+Then use `/plugins` in Copilot Chat to browse and install.
+
 ## Uninstall
 
 ```
+# Copilot CLI / Claude Code
 /plugin uninstall lewing@lewing-public
+
+# VS Code: remove the marketplace entry from chat.plugins.marketplaces in settings.json
 ```
 
 ## Skills
