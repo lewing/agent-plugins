@@ -73,7 +73,7 @@ A triage report with:
 
 ### Phase 2: Check Infrastructure First
 
-The #1 lesson from past investigations: **check dotnet/performance repo changes before blaming the runtime.**
+A common pattern from past investigations: **infrastructure changes in dotnet/performance are a frequent cause of false regressions — check there before assuming a runtime issue.**
 
 1. List PRs merged to dotnet/performance in the regression window
 2. Check for infrastructure changes that cause false regressions (see `perf-autofiler-triage` skill for the full checklist: BDN version, entry points, SDK type, trimming, machine pools)
@@ -131,11 +131,13 @@ For confirmed regressions, bisect across runtime pack versions:
 3. If real regression → identify the causal PR and assign
 4. **Present report to user before posting any comments**
 
-## Key Lessons (from prior investigations)
+## Common Patterns (from prior investigations)
 
-- **Data gaps are the biggest red flag.** If WASM perf runs were broken for weeks/months (e.g., BDN didn't support a new TFM), the auto-filer will compare new-methodology results against old baselines → massive false positives.
-- **BDN entry point changes matter.** The old `test-main.js` supported `--interpreter-pgo`, `--disable-on-demand-gc`, and runtime args. The new `benchmark-main.mjs` has none of these. If the old pipeline used any of these flags, results are not comparable.
-- **Shared machines add noise.** A 1.15x "regression" on a shared machine can disappear with proper isolation. Use codespaces for definitive bisection.
-- **SIMD instruction count is a fast check.** If both packs have 981 v128 instructions, SIMD isn't the problem. If one has 0, you found your bug.
-- **Runtime pack nupkgs are on NuGet feeds.** You can download and swap native files without building the runtime — much faster than building from source.
-- **`UseMonoRuntime=true` comes from dotnet/sdk, not dotnet/runtime.** Don't look for it in runtime's targets files.
+These are patterns that have explained regressions in past investigations. Treat them as hypotheses to check, not conclusions to assume:
+
+- **Data gaps can cause false positives.** If WASM perf runs were broken for weeks/months (e.g., BDN didn't support a new TFM), the auto-filer may compare new-methodology results against old baselines. Check whether a gap preceded the regression window.
+- **BDN entry point changes can affect results.** The old `test-main.js` supported `--interpreter-pgo`, `--disable-on-demand-gc`, and runtime args. The new `benchmark-main.mjs` may not. If the pipeline relied on these flags, results may not be directly comparable.
+- **Shared machines can add noise.** A 1.15x "regression" on a shared machine may disappear with proper isolation. Consider codespaces for definitive bisection when magnitudes are small.
+- **SIMD instruction count is a useful early signal.** If both packs have the same v128 instruction count, SIMD changes are unlikely to be the cause. A large difference warrants deeper investigation.
+- **Runtime pack nupkgs are available on NuGet feeds.** You can often download and swap native files without building the runtime — this can be much faster than building from source.
+- **`UseMonoRuntime=true` typically comes from dotnet/sdk, not dotnet/runtime.** If you're looking for this setting, check SDK targets files first.
