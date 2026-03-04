@@ -1,0 +1,22 @@
+{
+  "name": "dotnet-performance",
+  "version": "0.1.0",
+  "description": "Performance benchmarking and micro-benchmark skills for .NET",
+  "author": {
+    "name": "lewing"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "performance",
+    "benchmark",
+    "profiling"
+  ],
+  "skills": [
+    "skills/perf-autofiler-triage",
+    "skills/wasm-binary-analysis"
+  ],
+  "agents": [
+    "agents/WasmPerfInvestigator.agent.md"
+  ]
+}

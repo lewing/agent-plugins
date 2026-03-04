@@ -1,6 +1,6 @@
 # lewing/agent-plugins
 
-![plugins](https://img.shields.io/badge/plugins-5-blue) ![skills](https://img.shields.io/badge/skills-8-green) ![agents](https://img.shields.io/badge/agents-3-purple) ![MCP servers](https://img.shields.io/badge/MCP_servers-6-yellow) ![LSP servers](https://img.shields.io/badge/LSP_servers-1-orange)
+![plugins](https://img.shields.io/badge/plugins-6-blue) ![skills](https://img.shields.io/badge/skills-10-green) ![agents](https://img.shields.io/badge/agents-4-purple) ![MCP servers](https://img.shields.io/badge/MCP_servers-6-yellow) ![LSP servers](https://img.shields.io/badge/LSP_servers-1-orange)
 
 ![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-compatible-black?logo=github) ![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-cc785c?logo=anthropic)
 
@@ -91,6 +91,17 @@ Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and bu
 | [ci-analysis](plugins/dotnet-dnceng/skills/ci-analysis/SKILL.md) | [analysis-workflow](plugins/dotnet-dnceng/skills/ci-analysis/references/analysis-workflow.md), [azdo-helix-reference](plugins/dotnet-dnceng/skills/ci-analysis/references/azdo-helix-reference.md), [azure-cli](plugins/dotnet-dnceng/skills/ci-analysis/references/azure-cli.md), [binlog-comparison](plugins/dotnet-dnceng/skills/ci-analysis/references/binlog-comparison.md), [build-progression-analysis](plugins/dotnet-dnceng/skills/ci-analysis/references/build-progression-analysis.md), [delegation-patterns](plugins/dotnet-dnceng/skills/ci-analysis/references/delegation-patterns.md), [failure-interpretation](plugins/dotnet-dnceng/skills/ci-analysis/references/failure-interpretation.md), [helix-artifacts](plugins/dotnet-dnceng/skills/ci-analysis/references/helix-artifacts.md), [manual-investigation](plugins/dotnet-dnceng/skills/ci-analysis/references/manual-investigation.md), [recommendation-generation](plugins/dotnet-dnceng/skills/ci-analysis/references/recommendation-generation.md), [script-modes](plugins/dotnet-dnceng/skills/ci-analysis/references/script-modes.md), [sql-tracking](plugins/dotnet-dnceng/skills/ci-analysis/references/sql-tracking.md) |
 | [flow-analysis](plugins/dotnet-dnceng/skills/flow-analysis/SKILL.md) | [vmr-build-topology](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-build-topology.md), [vmr-codeflow-reference](plugins/dotnet-dnceng/skills/flow-analysis/references/vmr-codeflow-reference.md) |
 | [flow-tracing](plugins/dotnet-dnceng/skills/flow-tracing/SKILL.md) | [azdo-pipelines](plugins/dotnet-dnceng/skills/flow-tracing/references/azdo-pipelines.md), [sdk-version-format](plugins/dotnet-dnceng/skills/flow-tracing/references/sdk-version-format.md), [servicing-topology](plugins/dotnet-dnceng/skills/flow-tracing/references/servicing-topology.md) |
+
+### [dotnet-performance](plugins/dotnet-performance/)
+
+Performance benchmarking and micro-benchmark skills for .NET
+
+| Skill | References |
+|-------|------------|
+| [perf-autofiler-triage](plugins/dotnet-performance/skills/perf-autofiler-triage/SKILL.md) |  |
+| [wasm-binary-analysis](plugins/dotnet-performance/skills/wasm-binary-analysis/SKILL.md) |  |
+
+**Agents:** [WasmPerfInvestigator.agent](plugins/dotnet-performance/agents/WasmPerfInvestigator.agent.md)
 
 ### [framework-versioning](plugins/framework-versioning/)
 
