@@ -137,3 +137,12 @@ These are patterns that have explained regressions in past investigations. Treat
 - **The execution environment has many invisible variables.** JavaScript engine version, jiterpreter state, runtime flags, and GC configuration can all shift results without any .NET code change. When a regression doesn't reproduce in a controlled environment, suspect an environment variable you haven't accounted for.
 - **Sequential benchmarking can lie.** Running baseline 5x then candidate 5x on a shared machine can show false 1.1-1.2x regressions from thermal/load drift. Interleaved A/B testing (alternating runs) eliminates this — if results overlap across interleaved runs, the regression isn't real.
 - **Reproducing locally is necessary but not sufficient.** If you can reproduce, bisect. If you can't reproduce on a clean machine, the regression may be an artifact of the measurement environment — investigate what differs between the perf pipeline and your reproduction setup.
+
+## Efficiency Patterns
+
+Lessons from past investigations about avoiding wasted time:
+
+- **Use published SDK builds instead of building from source.** Daily prerelease SDKs are available on NuGet feeds and installable via `dotnet-install`. Building the runtime from source for bisection is rarely necessary and takes much longer.
+- **Move compute-heavy work to codespaces early.** Building, publishing, and benchmarking WASM apps is slow and resource-intensive. Offloading to a codespace avoids disrupting the user's machine and provides a more stable measurement environment.
+- **Ask the user when you're stuck on environment issues.** The user often knows tricks for navigating the build system (e.g., where to find version mappings, which feeds have daily builds, how to correlate SDK and runtime versions) that would take a long time to discover by searching. Don't spend 20 minutes exploring when a question would get the answer in 20 seconds.
+- **When bisection rules out runtime code, pivot immediately.** Don't keep looking for a runtime cause after bisection shows flat results. Redirect to the measurement infrastructure — what changed in how benchmarks are *run*, not what they *measure*.
