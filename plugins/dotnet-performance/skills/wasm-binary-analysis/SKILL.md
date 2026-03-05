@@ -59,6 +59,14 @@ curl -s "$FEED/microsoft.netcore.app.runtime.mono.browser-wasm/index.json" | jq 
 ls $DOTNET_ROOT/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/
 ```
 
+### Finding Versions for a Time Window
+
+When bisecting, you need to map a date range to specific SDK or runtime pack versions. The NuGet feed gives you version strings but not dates. To correlate:
+
+- **`eng/Version.Details.xml`** in dotnet/runtime or dotnet/performance — tracks which dependency versions were used at any point in time. Use `git log` with `--after`/`--before` on this file to find what versions were active during the regression window.
+- **Daily prerelease SDKs** are published to dotnet NuGet feeds and can be installed with `dotnet-install` by version number. This is much faster than building runtime from source.
+- **NuGet package timestamps** — the flat container API doesn't expose dates, but the package metadata endpoint does. Use the catalog API or check Azure DevOps build history to correlate versions to dates.
+
 ## Analysis Commands
 
 ### SIMD Instruction Count
