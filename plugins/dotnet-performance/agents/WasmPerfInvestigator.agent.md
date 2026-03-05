@@ -76,25 +76,22 @@ A triage report with:
 A common pattern from past investigations: **infrastructure changes in dotnet/performance are a frequent cause of false regressions — check there before assuming a runtime issue.**
 
 1. List PRs merged to dotnet/performance in the regression window
-2. Check for infrastructure changes that cause false regressions (see `perf-autofiler-triage` skill for the full checklist: BDN version, entry points, SDK type, trimming, machine pools)
+2. Check for infrastructure changes that cause false regressions (see `perf-autofiler-triage` skill for the full checklist)
 3. Check for **data gaps** — periods with no WASM perf data. A gap followed by methodology change = almost certainly a false positive.
-4. If infrastructure change found → classify as artifact, present evidence
+4. Check whether the **execution environment** changed — JavaScript engine version, build/publish mode, trimming settings, or runtime flags can all shift results independent of .NET code.
+5. If infrastructure change found → classify as artifact, present evidence
 
 ### Phase 3: Investigate Runtime Changes
 
 If infrastructure is clean, investigate the runtime:
 
-1. List commits in the regression window touching:
-   - `src/mono/` (interpreter, SIMD, GC)
-   - `src/libraries/System.Private.CoreLib/` (CoreLib)
-   - `src/mono/browser/` (WASM-specific)
-   - `eng/` (build configuration)
-2. For each suspect PR, assess:
-   - Does it touch SIMD codepaths? (check `transform-simd.c`, `interp-simd.c`)
-   - Does it change build configuration? (`WasmEnableSIMD`, emscripten version)
-   - Does it change interpreter optimization? (`interp.h`, `transform.c`)
+1. List commits in the regression window touching Mono, WASM, CoreLib, and build configuration
+2. For each suspect PR, ask:
+   - Does it change a code generation path (SIMD, jiterpreter, interpreter optimizations)?
+   - Does it change how the WASM binary is built (emscripten flags, trimming, AOT)?
+   - Could it change execution mode at runtime (feature flags, GC settings, PGO)?
    - Was it perf-tested before merge?
-3. Prioritize by risk: SIMD > build config > interpreter opts > CoreLib
+3. Prioritize by impact surface: code generation changes > build configuration > library code
 
 ### Phase 4: Binary Verification
 
@@ -110,15 +107,11 @@ Before bisecting, verify the basics. **Use the `wasm-binary-analysis` skill** fo
 
 For confirmed regressions, bisect across runtime pack versions:
 
-1. Download runtime pack nupkgs from the NuGet flat container API
+1. Download runtime pack nupkgs from the NuGet flat container API — swap native files without building from source
 2. Select ~10-15 versions spanning the regression window
-3. For each version:
-   - Extract native files from nupkg
-   - Swap into SDK's pack directory (`packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/`)
-   - Rebuild with `dotnet publish`
-   - Run benchmark (5 warmup rounds, 5 measured rounds, 10M+ iterations)
-4. Use median of last measured round for stability
-5. If variance is too high on shared machine → use a codespace (16-core, dedicated)
+3. Use **interleaved A/B testing** — alternate runs of baseline and candidate (A, B, A, B, A, B) rather than running all of one then all of the other. Sequential testing on shared machines can show false regressions of 1.1-1.2x from thermal/load drift alone.
+4. If results overlap across interleaved runs → no real regression, even if sequential runs suggested one
+5. If variance is too high on a shared machine → move to a dedicated codespace. See the `wasm-binary-analysis` skill's Codespace-Based Bisection section.
 
 ### Phase 6: Report
 
@@ -140,4 +133,6 @@ These are patterns that have explained regressions in past investigations. Treat
 - **Shared machines can add noise.** A 1.15x "regression" on a shared machine may disappear with proper isolation. Consider codespaces for definitive bisection when magnitudes are small.
 - **SIMD instruction count is a useful early signal.** If both packs have the same v128 instruction count, SIMD changes are unlikely to be the cause. A large difference warrants deeper investigation.
 - **Runtime pack nupkgs are available on NuGet feeds.** You can often download and swap native files without building the runtime — this can be much faster than building from source.
-- **`UseMonoRuntime=true` typically comes from dotnet/sdk, not dotnet/runtime.** If you're looking for this setting, check SDK targets files first.
+- **The execution environment has many invisible variables.** JavaScript engine version, jiterpreter state, runtime flags, and GC configuration can all shift results without any .NET code change. When a regression doesn't reproduce in a controlled environment, suspect an environment variable you haven't accounted for.
+- **Sequential benchmarking can lie.** Running baseline 5x then candidate 5x on a shared machine can show false 1.1-1.2x regressions from thermal/load drift. Interleaved A/B testing (alternating runs) eliminates this — if results overlap across interleaved runs, the regression isn't real.
+- **Reproducing locally is necessary but not sufficient.** If you can reproduce, bisect. If you can't reproduce on a clean machine, the regression may be an artifact of the measurement environment — investigate what differs between the perf pipeline and your reproduction setup.
