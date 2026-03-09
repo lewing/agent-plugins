@@ -6,7 +6,7 @@
 
 **Build Analysis check status**: The "Build Analysis" GitHub check is **green** only when *every* failure is matched to a known issue. If it's **red**, at least one failure is unaccounted for — do NOT claim "all failures are known issues" just because some known issues were found. You must verify each failing job is covered by a specific known issue before calling it safe to retry.
 
-**Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: use `hlx_status` on each Helix job in the timed-out build (include passed work items). If all work items passed, the build effectively passed.
+**Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: get the Helix job pass/fail summary for each job in the timed-out build (include passed work items). If all work items passed, the build effectively passed.
 
 > ❌ **Don't dismiss timed-out builds.** A build marked "failed" due to a 3-hour AzDO timeout can have 100% passing Helix work items. Check before concluding it failed.
 

@@ -86,7 +86,7 @@ Summarize the trace chain:
 
 Trace the dependency chain from a .NET SDK version string to the exact component commit SHA.
 
-> ⚠️ **Internal builds**: The script queries `dnceng/internal` via `az pipelines` CLI. If that fails, try the `ado-dnceng` MCP server instead, or vice versa.
+> ⚠️ **Internal builds**: The script queries `dnceng/internal` via `az pipelines` CLI. If that fails, try the Azure DevOps MCP tools instead, or vice versa.
 
 ### Quick Start
 

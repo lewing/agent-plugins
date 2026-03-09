@@ -137,7 +137,7 @@ Print the report directly in your response. The invoking agent or user decides w
 Use whatever tools are available in your session to fetch upstream truth:
 - `web_fetch` for documentation sites
 - GitHub MCP tools for repo contents, issues, PRs
-- Helix MCP tools (`hlx_status`, `hlx_files`, etc.) to verify API shapes
+- Helix MCP tools (job status, file listing, log search, etc.) to verify API shapes
 - AzDO MCP tools to verify pipeline API behavior
 - Maestro MCP tools to verify subscription/build APIs
 - `powershell` to run scripts and verify their output

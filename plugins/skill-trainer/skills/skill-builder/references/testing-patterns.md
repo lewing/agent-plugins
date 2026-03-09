@@ -242,8 +242,8 @@ From real experience — automated reviewers frequently flag these incorrectly:
 
 ### MCP tool name prefixes
 - **Claim**: Skill docs should use fully-qualified MCP tool names like `hlx-hlx_status` or `github-mcp-server-list_workflow_runs` instead of short names like `hlx_status` or `list_workflow_runs`
-- **Reality**: The official Agent Skills examples (GitHub docs, agentskills.io) all use short/descriptive tool names. The server prefix (e.g., `hlx-`, `github-mcp-server-`) is an implementation detail of MCP server registration — agents resolve the mapping. Use the short form in skill docs for readability.
-- **Response**: "Short names are consistent with the Agent Skills convention. The agent resolves MCP server prefixes automatically."
+- **Reality**: Skills should prefer domain language ("search the console log", "get job pass/fail summary") over any tool name. This maps to whichever tool the agent has — MCP, CLI, or API fallback. When tool names are unavoidable (e.g., anti-pattern examples), use short names; the server prefix is an implementation detail.
+- **Response**: "Domain language is preferred. It creates semantic connections to tool descriptions rather than literal coupling to names that change across MCP versions."
 
 ### Over-disposal
 - **Claim**: Every HTTP response/client needs try/finally/dispose

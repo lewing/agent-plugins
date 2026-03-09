@@ -38,27 +38,18 @@ $logContent | Select-String -Pattern "error|FAIL" -Context 2,5
 
 ## Search Helix Logs and Artifacts Remotely
 
-> 💡 **Prefer remote search over download.** `hlx_search_log` and `hlx_search_file` let you find errors in Helix console logs and uploaded files without downloading them first. Use these before falling back to `hlx_logs` (full log) or `hlx_download` (file download).
+> 💡 **Prefer remote search over download.** Search Helix console logs and uploaded files in place — find errors without downloading first. Only fall back to full log retrieval or file download when remote search isn't sufficient.
 
-```
-# Search a work item's console log for error patterns
-hlx_search_log(jobId, workItem, pattern="error", contextLines=3)
+Use your Helix MCP tools to:
+- **Search a work item's console log** for error patterns (with context lines)
+- **Search an uploaded file** (e.g., testResults.xml) for specific text like "Failed"
+- **Find which work items have specific file types** (e.g., `*.binlog`, `*.trx`, `*.dmp`)
 
-# Search an uploaded file (e.g., testResults.xml) for specific text
-hlx_search_file(jobId, workItem, fileName="testResults.xml", pattern="Failed")
-
-# Find which work items have specific file types
-hlx_find_files(jobId, pattern="*.binlog")
-```
-
-These tools return matching lines with context — much faster than downloading full logs and grepping locally. Use them for:
-- Finding specific error messages across large console logs
-- Searching test result files for failure patterns
-- Locating crash dumps or binlogs across work items
+These return matching lines with context — much faster than downloading full logs and grepping locally.
 
 ## Query Helix APIs
 
-> 💡 **Prefer MCP tools when available** — `hlx_search_log`, `hlx_search_file`, `hlx_status`, `hlx_logs`, `hlx_files`, etc. handle most Helix queries without manual curl commands. Use the APIs below only as fallback.
+> 💡 **Prefer MCP tools when available** — your Helix MCP tools handle job status, log search, file listing, and artifact download without manual curl commands. Use the APIs below only as fallback when MCP tools are unavailable.
 
 ```bash
 # Get job details

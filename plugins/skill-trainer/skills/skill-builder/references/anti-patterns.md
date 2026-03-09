@@ -32,7 +32,11 @@ then download as last resort.
 
 **When examples ARE needed**: CLI tools and terse MCP tools often lack context that only domain experience provides — the branch ref pattern `refs/pull/{PR}/merge`, the checkout log location (typically log ID 5), the field name `triggerInfo.'pr.sourceSha'`. These are examples that teach *domain usage*, not tool mechanics.
 
-**When examples are NOT needed**: Rich MCP tools (like Helix v0.1.3) that document their parameters, return shapes, and usage patterns in their own descriptions. Don't restate what the agent already sees.
+**When examples are NOT needed**: Rich MCP tools (like Helix MCP) that document their parameters, return shapes, and usage patterns in their own descriptions. Don't restate what the agent already sees.
+
+> 💡 **Use domain language, not tool names.** Say "search the console log for error patterns" instead of naming a specific tool. This creates a semantic connection to tool *descriptions* rather than a literal coupling to tool *names* — so skills work across MCP servers, CLIs, and API fallbacks without updating.
+
+> 💡 **CLI examples can reinforce domain language.** Self-describing CLI commands like `gh issue view --comments` or `az pipelines list --name "X"` are *not* the same problem as opaque MCP tool names like `hlx_status`. CLI flags describe intent — models read them as "get issue with comments" and map to the best available tool (MCP, CLI, or API). Multi-model eval (3 families, 15/15 correct) confirmed models never copy-paste CLI examples when MCP tools are available. Strip opaque identifiers; keep self-describing examples.
 
 **Rule of thumb**: If removing the example would leave the agent unable to accomplish the task even with the tool description in front of it, keep the example. If the tool description alone is sufficient, the example is redundant.
 
