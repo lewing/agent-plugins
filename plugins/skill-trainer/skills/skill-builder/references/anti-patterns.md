@@ -42,6 +42,8 @@ then download as last resort.
 
 **What belongs in frontmatter only**: `INVOKES: tool-a, tool-b` — routing signals that help the LLM understand skill→tool relationships without duplicating tool docs.
 
+> 📎 **For MCP server authors**: If you're designing the tools that skills consume, see `mcp-server-design` skill — covers tool description patterns, naming conventions, and knowledge tool architecture from the server author's perspective.
+
 ### Over-scripting
 **Don't write scripts that replicate what agents already do.** Agents have `create`, `edit`, `task` (subagents), `powershell`, `gh` CLI, and dozens of other tools. A scaffold script that calls `New-Item` and writes template files is strictly worse than the agent doing it directly — the agent adapts to context, a script doesn't.
 

@@ -128,6 +128,8 @@ description: >
 
 > ⚠️ **Name tool families, not individual tools.** Write `INVOKES: maestro and GitHub MCP tools, Get-FlowHealth.ps1 script` — not a list of every tool name. The family reference connects the skill to the MCP server descriptions; the agent discovers individual tools from there. Scripts are skill-local and need explicit mention.
 
+> 📎 **For MCP server authors**: The INVOKES pattern relies on consistent tool family naming (`helix_*`, `azdo_*`). See `mcp-server-design` skill for guidance on naming families and writing descriptions that make INVOKES routing effective.
+
 **Minimal example** (single-purpose skill, no adjacent skills):
 ```yaml
 description: >

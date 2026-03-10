@@ -43,6 +43,18 @@ Then use `/plugins` in Copilot Chat to browse and install.
 
 ## Skills
 
+### [mcp-server-design](skills/mcp-server-design/SKILL.md)
+
+Guide MCP server design for agent consumption: tool descriptions, naming, knowledge tools, annotations. USE FOR: writing tool descriptions, naming tools, designing knowledge endpoints, reviewing MCP server design, adding tool annotations. DO NOT USE FOR: building skills that consume MCP tools (use skill-builder), MCP protocol implementation details.
+
+**References:**
+- [agent-integration-patterns.md](skills/mcp-server-design/references/agent-integration-patterns.md)
+- [industry-alignment.md](skills/mcp-server-design/references/industry-alignment.md)
+- [knowledge-tool-design.md](skills/mcp-server-design/references/knowledge-tool-design.md)
+- [tool-description-patterns.md](skills/mcp-server-design/references/tool-description-patterns.md)
+- [tool-naming-conventions.md](skills/mcp-server-design/references/tool-naming-conventions.md)
+- [validation-methodology.md](skills/mcp-server-design/references/validation-methodology.md)
+
 ### [skill-builder](skills/skill-builder/SKILL.md)
 
 Build, test, and deploy Copilot CLI skills. Use when creating a new skill, improving an existing skill, testing skills with subagents, deploying skills to a repo, or learning skill development patterns.

@@ -1,6 +1,6 @@
 # lewing/agent-plugins
 
-![plugins](https://img.shields.io/badge/plugins-6-blue) ![skills](https://img.shields.io/badge/skills-10-green) ![agents](https://img.shields.io/badge/agents-4-purple) ![MCP servers](https://img.shields.io/badge/MCP_servers-6-yellow) ![LSP servers](https://img.shields.io/badge/LSP_servers-1-orange)
+![plugins](https://img.shields.io/badge/plugins-6-blue) ![skills](https://img.shields.io/badge/skills-11-green) ![agents](https://img.shields.io/badge/agents-4-purple) ![MCP servers](https://img.shields.io/badge/MCP_servers-6-yellow) ![LSP servers](https://img.shields.io/badge/LSP_servers-1-orange)
 
 ![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-compatible-black?logo=github) ![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-cc785c?logo=anthropic)
 
@@ -119,6 +119,7 @@ Skills for building, testing, and training Copilot CLI skills — patterns, anti
 
 | Skill | References |
 |-------|------------|
+| [mcp-server-design](plugins/skill-trainer/skills/mcp-server-design/SKILL.md) | [agent-integration-patterns](plugins/skill-trainer/skills/mcp-server-design/references/agent-integration-patterns.md), [industry-alignment](plugins/skill-trainer/skills/mcp-server-design/references/industry-alignment.md), [knowledge-tool-design](plugins/skill-trainer/skills/mcp-server-design/references/knowledge-tool-design.md), [tool-description-patterns](plugins/skill-trainer/skills/mcp-server-design/references/tool-description-patterns.md), [tool-naming-conventions](plugins/skill-trainer/skills/mcp-server-design/references/tool-naming-conventions.md), [validation-methodology](plugins/skill-trainer/skills/mcp-server-design/references/validation-methodology.md) |
 | [skill-builder](plugins/skill-trainer/skills/skill-builder/SKILL.md) | [agent-conventions](plugins/skill-trainer/skills/skill-builder/references/agent-conventions.md), [anti-patterns](plugins/skill-trainer/skills/skill-builder/references/anti-patterns.md), [skill-lifecycle](plugins/skill-trainer/skills/skill-builder/references/skill-lifecycle.md), [skill-patterns](plugins/skill-trainer/skills/skill-builder/references/skill-patterns.md), [testing-patterns](plugins/skill-trainer/skills/skill-builder/references/testing-patterns.md) |
 | [skill-trainer-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/SKILL.md) | [eval-integration](plugins/skill-trainer/skills/skill-trainer-knowledge/references/eval-integration.md), [skill-builder-knowledge](plugins/skill-trainer/skills/skill-trainer-knowledge/references/skill-builder-knowledge.md), [training-methodology](plugins/skill-trainer/skills/skill-trainer-knowledge/references/training-methodology.md) |
 

@@ -31,6 +31,8 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 **Not for**: GitHub Actions workflows, non-Helix repos, or build performance (use binlog analysis).
 
+> 💡 **Per-repo CI patterns differ significantly.** Each dotnet repo structures test results differently (TRX availability, console log patterns, work item naming). Before investigating a repo you haven't seen before, check the empirical profiles in `dnceng-knowledge/ci-repo-profiles` — they document the fastest investigation path per repo and prevent wasted MCP calls.
+
 ## Quick Start
 
 ```powershell
