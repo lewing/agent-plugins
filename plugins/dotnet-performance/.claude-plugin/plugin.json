@@ -1,5 +1,6 @@
 {
   "name": "dotnet-performance",
+  "category": "dotnet",
   "version": "0.1.0",
   "description": "Performance benchmarking and micro-benchmark skills for .NET",
   "author": {

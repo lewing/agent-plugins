@@ -1,5 +1,6 @@
 {
   "name": "framework-versioning",
+  "category": "dotnet",
   "version": "0.1.0",
   "description": "Skills and agents for .NET major version bumps: TFM updates, workload manifest creation, and version property management",
   "author": {

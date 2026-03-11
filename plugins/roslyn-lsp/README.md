@@ -45,4 +45,4 @@ Then use `/plugins` in Copilot Chat to browse and install.
 
 This plugin configures the following language servers:
 
-- **[csharp](.claude-plugin/plugin.json#L17-L30)** — `dotnet`
+- **[csharp](.claude-plugin/plugin.json#L18-L31)** — `dotnet`

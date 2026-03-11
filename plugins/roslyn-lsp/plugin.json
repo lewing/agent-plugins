@@ -1,5 +1,6 @@
 {
   "name": "roslyn-lsp",
+  "category": "tooling",
   "version": "0.1.0",
   "description": "Roslyn C# language server for code intelligence in Copilot CLI",
   "author": {

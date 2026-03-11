@@ -236,6 +236,92 @@ settingsCmd.Subcommands.Add(Action("diff", "Show missing or different settings",
     RunSettingsDiff(pr.GetValue(editionOption), pr.GetValue(verboseOption))));
 rootCommand.Subcommands.Add(settingsCmd);
 
+// ----- Marketplace (repo-scoped) -----
+var mktCmd = new Command("marketplace", "Manage repo-scoped marketplace settings (.github/copilot/settings.json)");
+{
+    var targetDirOption = new Option<string?>("--target-dir")
+    {
+        Description = "Target repo directory (defaults to current working directory)"
+    };
+    var mirrorOption = new Option<string?>("--mirror")
+    {
+        Description = "Mirror name from public-mirrors.json (defaults to this repo's marketplace)"
+    };
+    var pluginsOption = new Option<string[]>("--plugin")
+    {
+        Description = "Plugin names to enable (defaults to all in marketplace)",
+        AllowMultipleArgumentsPerToken = true
+    };
+    var mktInstallCmd = new Command("install", "Generate .github/copilot/settings.json for a target repo")
+    {
+        targetDirOption, mirrorOption, pluginsOption
+    };
+    mktInstallCmd.SetAction(pr => RunMarketplaceInstall(
+        pr.GetValue(targetDirOption), pr.GetValue(mirrorOption), pr.GetValue(pluginsOption),
+        pr.GetValue(dryRunOption), pr.GetValue(verboseOption)));
+    mktCmd.Subcommands.Add(mktInstallCmd);
+
+    var mktShowCmd = new Command("show", "Show what .github/copilot/settings.json would contain")
+    {
+        targetDirOption, mirrorOption, pluginsOption
+    };
+    mktShowCmd.SetAction(pr => RunMarketplaceInstall(
+        pr.GetValue(targetDirOption), pr.GetValue(mirrorOption), pr.GetValue(pluginsOption),
+        true, pr.GetValue(verboseOption)));
+    mktCmd.Subcommands.Add(mktShowCmd);
+}
+rootCommand.Subcommands.Add(mktCmd);
+
+// ----- Upstream -----
+var upstreamCmd = new Command("upstream", "Compare and sync skills with upstream repos (PR-based)");
+{
+    var upstreamNameOption = new Option<string?>("--upstream")
+    {
+        Description = "Upstream name from public-mirrors.json (defaults to all)"
+    };
+    var upstreamSkillOption = new Option<string?>("--skill")
+    {
+        Description = "Filter to a specific skill"
+    };
+    var upstreamPluginOption = new Option<string?>("--plugin")
+    {
+        Description = "Filter to a specific plugin group"
+    };
+    var jsonOption = new Option<bool>("--json")
+    {
+        Description = "Output machine-readable JSON"
+    };
+
+    var upDiffCmd = new Command("diff", "Compare local vs upstream skill content (bidirectional)")
+    {
+        upstreamNameOption, upstreamSkillOption, upstreamPluginOption, jsonOption, verboseOption
+    };
+    upDiffCmd.SetAction(pr => RunUpstreamDiff(
+        pr.GetValue(upstreamNameOption), pr.GetValue(upstreamPluginOption),
+        pr.GetValue(upstreamSkillOption), pr.GetValue(jsonOption), pr.GetValue(verboseOption)));
+    upstreamCmd.Subcommands.Add(upDiffCmd);
+
+    var upSyncCmd = new Command("sync", "Create PRs to push local changes to upstream repos")
+    {
+        upstreamNameOption, upstreamSkillOption, upstreamPluginOption, dryRunOption, verboseOption
+    };
+    upSyncCmd.SetAction(pr => RunUpstreamSync(
+        pr.GetValue(upstreamNameOption), pr.GetValue(upstreamPluginOption),
+        pr.GetValue(upstreamSkillOption), pr.GetValue(dryRunOption), pr.GetValue(verboseOption)));
+    upstreamCmd.Subcommands.Add(upSyncCmd);
+
+    var upPullCmd = new Command("pull", "Pull remote-ahead or diverged changes from upstream into local repo")
+    {
+        upstreamNameOption, upstreamSkillOption, upstreamPluginOption, dryRunOption, forceOption, verboseOption
+    };
+    upPullCmd.SetAction(pr => RunUpstreamPull(
+        pr.GetValue(upstreamNameOption), pr.GetValue(upstreamPluginOption),
+        pr.GetValue(upstreamSkillOption), pr.GetValue(dryRunOption), pr.GetValue(forceOption),
+        pr.GetValue(verboseOption)));
+    upstreamCmd.Subcommands.Add(upPullCmd);
+}
+rootCommand.Subcommands.Add(upstreamCmd);
+
 // ----- All -----
 var allCmd = new Command("all", "Bulk operations across all categories");
 allCmd.Subcommands.Add(Action("list", "List all asset types", pr =>
@@ -1725,8 +1811,848 @@ void RunSettingsDiff(string edition, bool verbose)
 }
 
 // ============================================================================
-// Shared File Sync Helpers
+// Marketplace (repo-scoped .github/copilot/settings.json)
 // ============================================================================
+
+void RunMarketplaceInstall(string? targetDir, string? mirrorName, string[]? pluginNames,
+    bool dryRun, bool verbose)
+{
+    PrintHeader("Marketplace install (repo-scoped)");
+
+    // Resolve target directory
+    var dir = targetDir ?? Environment.CurrentDirectory;
+    if (!Directory.Exists(dir))
+    {
+        PrintError($"  Target directory not found: {dir}");
+        return;
+    }
+
+    // Resolve marketplace source (mirror or this repo)
+    string marketplaceName;
+    string targetRepo;
+    List<string> availablePlugins;
+
+    if (mirrorName != null)
+    {
+        // Use a mirror from public-mirrors.json
+        var mirrorsPath = Path.Combine(repoRoot, "public-mirrors.json");
+        if (!File.Exists(mirrorsPath))
+        {
+            PrintError($"  public-mirrors.json not found at {mirrorsPath}");
+            return;
+        }
+        var mirrorsJson = JsonNode.Parse(File.ReadAllText(mirrorsPath));
+        var mirrors = mirrorsJson?["mirrors"]?.AsArray();
+        var mirror = mirrors?.FirstOrDefault(m => m?["name"]?.GetValue<string>() == mirrorName);
+        if (mirror == null)
+        {
+            PrintError($"  Mirror '{mirrorName}' not found. Available: {string.Join(", ", mirrors?.Select(m => m?["name"]?.GetValue<string>()) ?? [])}");
+            return;
+        }
+        marketplaceName = mirrorName;
+        targetRepo = mirror["targetRepo"]!.GetValue<string>();
+        // Collect all plugin names from the mirror's plugins object
+        availablePlugins = new List<string>();
+        if (mirror["plugins"] is JsonObject pluginsObj)
+        {
+            foreach (var kv in pluginsObj)
+                availablePlugins.Add(kv.Key);
+        }
+    }
+    else
+    {
+        // Use this repo's marketplace
+        var mktRef = GetMarketplaceRef();
+        if (mktRef == null)
+        {
+            PrintError("  Could not determine marketplace repo from git remote");
+            return;
+        }
+        targetRepo = mktRef;
+        var mktPath = Path.Combine(repoRoot, ".github", "plugin", "marketplace.json");
+        if (!File.Exists(mktPath))
+        {
+            PrintError($"  marketplace.json not found at {mktPath}");
+            return;
+        }
+        var mktJson = JsonNode.Parse(File.ReadAllText(mktPath));
+        marketplaceName = mktJson?["name"]?.GetValue<string>() ?? "marketplace";
+        availablePlugins = new List<string>();
+        if (mktJson?["plugins"] is JsonArray pluginsArr)
+        {
+            foreach (var p in pluginsArr)
+            {
+                var name = p?["name"]?.GetValue<string>();
+                if (name != null) availablePlugins.Add(name);
+            }
+        }
+    }
+
+    // Resolve which plugins to enable
+    var enablePlugins = pluginNames?.Length > 0
+        ? pluginNames.ToList()
+        : availablePlugins;
+
+    // Validate requested plugins exist
+    foreach (var p in enablePlugins)
+    {
+        if (!availablePlugins.Contains(p))
+            PrintWarning($"  Plugin '{p}' not found in {marketplaceName} — including anyway");
+    }
+
+    // Build .github/copilot/settings.json
+    var settingsObj = new JsonObject
+    {
+        ["marketplaces"] = new JsonObject
+        {
+            [marketplaceName] = new JsonObject
+            {
+                ["source"] = new JsonObject
+                {
+                    ["source"] = "github",
+                    ["repo"] = targetRepo
+                }
+            }
+        }
+    };
+
+    var enabledObj = new JsonObject();
+    foreach (var p in enablePlugins)
+        enabledObj[$"{p}@{marketplaceName}"] = true;
+    settingsObj["enabledPlugins"] = enabledObj;
+
+    var copilotDir = Path.Combine(dir, ".github", "copilot");
+    var settingsPath = Path.Combine(copilotDir, "settings.json");
+
+    // Check for existing file
+    if (File.Exists(settingsPath))
+    {
+        var existing = File.ReadAllText(settingsPath);
+        if (verbose) Console.WriteLine($"  Existing {settingsPath}:\n{existing}");
+
+        // Merge: add marketplace and plugins to existing settings
+        var existingNode = JsonNode.Parse(existing);
+        if (existingNode is JsonObject existingObj)
+        {
+            // Add/update marketplace entry
+            if (existingObj["marketplaces"] is not JsonObject existingMkt)
+            {
+                existingMkt = new JsonObject();
+                existingObj["marketplaces"] = existingMkt;
+            }
+            existingMkt[marketplaceName] = new JsonObject
+            {
+                ["source"] = new JsonObject
+                {
+                    ["source"] = "github",
+                    ["repo"] = targetRepo
+                }
+            };
+
+            // Add/update enabled plugins
+            if (existingObj["enabledPlugins"] is not JsonObject existingEnabled)
+            {
+                existingEnabled = new JsonObject();
+                existingObj["enabledPlugins"] = existingEnabled;
+            }
+            foreach (var p in enablePlugins)
+                existingEnabled[$"{p}@{marketplaceName}"] = true;
+
+            settingsObj = existingObj;
+        }
+    }
+
+    var output = settingsObj.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    Console.WriteLine($"\n  Target: {settingsPath}");
+    Console.WriteLine($"  Marketplace: {marketplaceName} → {targetRepo}");
+    Console.WriteLine($"  Plugins: {string.Join(", ", enablePlugins)}");
+    Console.WriteLine();
+    Console.WriteLine(output);
+
+    if (dryRun)
+    {
+        PrintInfo("\n  (dry run — no files written)");
+        return;
+    }
+
+    Directory.CreateDirectory(copilotDir);
+    File.WriteAllText(settingsPath, output + "\n");
+    PrintSuccess($"\n  Wrote {settingsPath}");
+    PrintInfo("  Commit this file so anyone cloning the repo gets the marketplace plugins automatically.");
+}
+
+// ============================================================================
+// Upstream Diff & Sync (PR-based bidirectional sync with external repos)
+// ============================================================================
+
+List<UpstreamConfig> LoadUpstreams(string? filterName)
+{
+    var mirrorsPath = Path.Combine(repoRoot, "public-mirrors.json");
+    if (!File.Exists(mirrorsPath))
+    {
+        PrintError("public-mirrors.json not found");
+        return new();
+    }
+    var json = JsonNode.Parse(File.ReadAllText(mirrorsPath));
+    var upstreams = json?["upstreams"]?.AsArray();
+    if (upstreams == null || upstreams.Count == 0)
+    {
+        PrintError("No upstreams configured in public-mirrors.json");
+        return new();
+    }
+
+    var result = new List<UpstreamConfig>();
+    foreach (var u in upstreams)
+    {
+        var name = u?["name"]?.GetValue<string>() ?? "";
+        if (filterName != null && name != filterName) continue;
+
+        var targetRepo = u?["targetRepo"]?.GetValue<string>() ?? "";
+        var targetBranch = u?["targetBranch"]?.GetValue<string>() ?? "main";
+        var plugins = new List<UpstreamPluginMapping>();
+
+        if (u?["plugins"] is JsonObject pluginsObj)
+        {
+            foreach (var kv in pluginsObj)
+            {
+                var localPlugin = kv.Key;
+                var skills = new List<string>();
+                string? targetPlugin = null;
+
+                if (kv.Value is JsonObject pObj)
+                {
+                    if (pObj["skills"] is JsonArray skillsArr)
+                        skills.AddRange(skillsArr.Select(s => s!.GetValue<string>()));
+                    targetPlugin = pObj["targetPlugin"]?.GetValue<string>();
+                }
+                else if (kv.Value is JsonArray arr)
+                {
+                    skills.AddRange(arr.Select(s => s!.GetValue<string>()));
+                }
+
+                plugins.Add(new UpstreamPluginMapping(localPlugin, targetPlugin ?? localPlugin, skills));
+            }
+        }
+
+        result.Add(new UpstreamConfig(name, targetRepo, targetBranch, u?["description"]?.GetValue<string>() ?? "", plugins));
+    }
+
+    if (filterName != null && result.Count == 0)
+        PrintError($"Upstream '{filterName}' not found");
+
+    return result;
+}
+
+// (types defined at end of file with other records)
+
+/// <summary>Gets the git tree for a remote repo via gh api.</summary>
+Dictionary<string, string>? GetRemoteTree(string repo, string branch)
+{
+    try
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "gh",
+            Arguments = $"api repos/{repo}/git/trees/{branch}?recursive=1 --jq \".tree[] | select(.type == \\\"blob\\\") | [.path, .sha] | @tsv\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        using var process = System.Diagnostics.Process.Start(psi)!;
+        var output = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0) return null;
+
+        var tree = new Dictionary<string, string>();
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Split('\t', 2);
+            if (parts.Length == 2) tree[parts[0]] = parts[1];
+        }
+        return tree;
+    }
+    catch { return null; }
+}
+
+/// <summary>Gets the git blob SHA for a local file (same algorithm as git).</summary>
+string? GetLocalBlobSha(string filePath)
+{
+    if (!File.Exists(filePath)) return null;
+    try
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"hash-object \"{filePath}\"",
+            WorkingDirectory = repoRoot,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        using var process = System.Diagnostics.Process.Start(psi)!;
+        var output = process.StandardOutput.ReadToEnd().Trim();
+        process.WaitForExit();
+        return process.ExitCode == 0 ? output : null;
+    }
+    catch { return null; }
+}
+
+/// <summary>Computes drift for a single skill between local and remote.</summary>
+SkillDrift ComputeSkillDrift(string skillName, string localPlugin, string targetPlugin,
+    Dictionary<string, string> remoteTree)
+{
+    var localSkillDir = Path.Combine(repoRoot, "plugins", localPlugin, "skills", skillName);
+    var remotePrefix = $"plugins/{targetPlugin}/skills/{skillName}/";
+    var drifts = new List<FileDrift>();
+
+    // Syncable subdirs within a skill
+    var syncableDirs = new[] { "", "references", "scripts", "assets" };
+
+    // Collect local files
+    var localFiles = new Dictionary<string, string>(); // relative path → full path
+    if (Directory.Exists(localSkillDir))
+    {
+        foreach (var dir in syncableDirs)
+        {
+            var fullDir = dir == "" ? localSkillDir : Path.Combine(localSkillDir, dir);
+            if (!Directory.Exists(fullDir)) continue;
+            foreach (var file in Directory.GetFiles(fullDir))
+            {
+                var relPath = Path.GetRelativePath(localSkillDir, file).Replace('\\', '/');
+                localFiles[relPath] = file;
+            }
+        }
+    }
+
+    // Collect remote files under the skill prefix
+    var remoteFiles = new Dictionary<string, string>(); // relative path → sha
+    foreach (var kv in remoteTree)
+    {
+        if (kv.Key.StartsWith(remotePrefix) && !kv.Key.EndsWith("/"))
+        {
+            var relPath = kv.Key[remotePrefix.Length..];
+            // Only include syncable subdirs
+            var topDir = relPath.Contains('/') ? relPath[..relPath.IndexOf('/')] : "";
+            if (syncableDirs.Contains(topDir) || !relPath.Contains('/'))
+                remoteFiles[relPath] = kv.Value;
+        }
+    }
+
+    // Compare
+    var allPaths = localFiles.Keys.Union(remoteFiles.Keys).OrderBy(p => p);
+    foreach (var path in allPaths)
+    {
+        var hasLocal = localFiles.ContainsKey(path);
+        var hasRemote = remoteFiles.ContainsKey(path);
+
+        if (hasLocal && hasRemote)
+        {
+            var localSha = GetLocalBlobSha(localFiles[path]);
+            var remoteSha = remoteFiles[path];
+            if (localSha == remoteSha)
+                drifts.Add(new FileDrift(path, DriftStatus.InSync, localSha, remoteSha));
+            else
+                drifts.Add(new FileDrift(path, DriftStatus.Diverged, localSha, remoteSha));
+        }
+        else if (hasLocal)
+        {
+            drifts.Add(new FileDrift(path, DriftStatus.LocalOnly, GetLocalBlobSha(localFiles[path]), null));
+        }
+        else
+        {
+            drifts.Add(new FileDrift(path, DriftStatus.RemoteOnly, null, remoteFiles[path]));
+        }
+    }
+
+    return new SkillDrift(skillName, localPlugin, targetPlugin, drifts);
+}
+
+void RunUpstreamDiff(string? upstreamName, string? pluginFilter, string? skillFilter,
+    bool jsonOutput, bool verbose)
+{
+    PrintHeader("Upstream diff (bidirectional)");
+    var upstreams = LoadUpstreams(upstreamName);
+    if (upstreams.Count == 0) return;
+
+    var allResults = new Dictionary<string, List<SkillDrift>>();
+
+    foreach (var upstream in upstreams)
+    {
+        Console.WriteLine($"\n  {upstream.Name} → {upstream.TargetRepo} ({upstream.TargetBranch})");
+        var remoteTree = GetRemoteTree(upstream.TargetRepo, upstream.TargetBranch);
+        if (remoteTree == null)
+        {
+            PrintError($"    Could not fetch remote tree for {upstream.TargetRepo}");
+            continue;
+        }
+
+        var skillDrifts = new List<SkillDrift>();
+
+        foreach (var pluginMapping in upstream.Plugins)
+        {
+            if (pluginFilter != null && pluginMapping.LocalPlugin != pluginFilter) continue;
+
+            foreach (var skill in pluginMapping.Skills)
+            {
+                if (skillFilter != null && skill != skillFilter) continue;
+
+                var drift = ComputeSkillDrift(skill, pluginMapping.LocalPlugin,
+                    pluginMapping.TargetPlugin, remoteTree);
+                skillDrifts.Add(drift);
+
+                if (!jsonOutput)
+                {
+                    var icon = drift.OverallStatus switch
+                    {
+                        DriftStatus.InSync => "✅",
+                        DriftStatus.LocalAhead => "📤",
+                        DriftStatus.RemoteAhead => "📥",
+                        DriftStatus.Diverged => "⚡",
+                        DriftStatus.LocalOnly => "➕",
+                        DriftStatus.RemoteOnly => "➖",
+                        _ => "❓"
+                    };
+                    var pluginNote = pluginMapping.LocalPlugin != pluginMapping.TargetPlugin
+                        ? $" ({pluginMapping.LocalPlugin} → {pluginMapping.TargetPlugin})"
+                        : "";
+                    Console.WriteLine($"    {icon} {skill}{pluginNote}");
+
+                    if (verbose || drift.OverallStatus != DriftStatus.InSync)
+                    {
+                        foreach (var f in drift.Files.Where(f => f.Status != DriftStatus.InSync || verbose))
+                        {
+                            var fIcon = f.Status switch
+                            {
+                                DriftStatus.InSync => "  ✅",
+                                DriftStatus.LocalOnly => "  ➕",
+                                DriftStatus.RemoteOnly => "  ➖",
+                                DriftStatus.Diverged => "  ⚡",
+                                _ => "  ❓"
+                            };
+                            Console.WriteLine($"      {fIcon} {f.RelativePath}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also check for agents in remote that map to our agents
+        foreach (var pluginMapping in upstream.Plugins)
+        {
+            if (pluginFilter != null && pluginMapping.LocalPlugin != pluginFilter) continue;
+
+            var localAgentDir = Path.Combine(repoRoot, "plugins", pluginMapping.LocalPlugin, "agents");
+            var remoteAgentPrefix = $"plugins/{pluginMapping.TargetPlugin}/agents/";
+
+            var localAgents = Directory.Exists(localAgentDir)
+                ? Directory.GetFiles(localAgentDir, "*.agent.md").Select(Path.GetFileName).ToList()
+                : new List<string?>();
+
+            var remoteAgents = remoteTree.Keys
+                .Where(k => k.StartsWith(remoteAgentPrefix) && k.EndsWith(".agent.md"))
+                .Select(k => k[remoteAgentPrefix.Length..])
+                .ToList();
+
+            var allAgents = localAgents.Union(remoteAgents).Where(a => a != null).Distinct().OrderBy(a => a);
+            foreach (var agent in allAgents)
+            {
+                var localPath = Path.Combine(localAgentDir, agent!);
+                var remotePath = remoteAgentPrefix + agent;
+                var hasLocal = File.Exists(localPath);
+                var hasRemote = remoteTree.ContainsKey(remotePath);
+
+                DriftStatus status;
+                if (hasLocal && hasRemote)
+                {
+                    var localSha = GetLocalBlobSha(localPath);
+                    status = localSha == remoteTree[remotePath] ? DriftStatus.InSync : DriftStatus.Diverged;
+                }
+                else if (hasLocal) status = DriftStatus.LocalOnly;
+                else status = DriftStatus.RemoteOnly;
+
+                if (!jsonOutput && (status != DriftStatus.InSync || verbose))
+                {
+                    var icon = status switch
+                    {
+                        DriftStatus.InSync => "✅", DriftStatus.Diverged => "⚡",
+                        DriftStatus.LocalOnly => "➕", DriftStatus.RemoteOnly => "➖", _ => "❓"
+                    };
+                    Console.WriteLine($"    {icon} agent: {agent}");
+                }
+            }
+        }
+
+        allResults[upstream.Name] = skillDrifts;
+    }
+
+    if (jsonOutput)
+    {
+        var jsonObj = new JsonObject();
+        foreach (var (name, drifts) in allResults)
+        {
+            var arr = new JsonArray();
+            foreach (var d in drifts)
+            {
+                var filesArr = new JsonArray();
+                foreach (var f in d.Files)
+                    filesArr.Add(new JsonObject
+                    {
+                        ["path"] = f.RelativePath,
+                        ["status"] = f.Status.ToString(),
+                        ["localSha"] = f.LocalSha,
+                        ["remoteSha"] = f.RemoteSha
+                    });
+                arr.Add(new JsonObject
+                {
+                    ["skill"] = d.SkillName,
+                    ["localPlugin"] = d.LocalPlugin,
+                    ["targetPlugin"] = d.TargetPlugin,
+                    ["status"] = d.OverallStatus.ToString(),
+                    ["files"] = filesArr
+                });
+            }
+            jsonObj[name] = arr;
+        }
+        Console.WriteLine(jsonObj.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    // Summary
+    if (!jsonOutput)
+    {
+        Console.WriteLine();
+        var total = allResults.Values.SelectMany(d => d).ToList();
+        var synced = total.Count(d => d.OverallStatus == DriftStatus.InSync);
+        var outbound = total.Count(d => d.OverallStatus == DriftStatus.LocalAhead);
+        var inbound = total.Count(d => d.OverallStatus == DriftStatus.RemoteAhead);
+        var diverged = total.Count(d => d.OverallStatus == DriftStatus.Diverged);
+        PrintInfo($"  Summary: {synced} in-sync, {outbound} local-ahead, {inbound} remote-ahead, {diverged} diverged");
+    }
+}
+
+void RunUpstreamSync(string? upstreamName, string? pluginFilter, string? skillFilter,
+    bool dryRun, bool verbose)
+{
+    PrintHeader("Upstream sync (create PRs)");
+    var upstreams = LoadUpstreams(upstreamName);
+    if (upstreams.Count == 0) return;
+
+    foreach (var upstream in upstreams)
+    {
+        Console.WriteLine($"\n  {upstream.Name} → {upstream.TargetRepo} ({upstream.TargetBranch})");
+        var remoteTree = GetRemoteTree(upstream.TargetRepo, upstream.TargetBranch);
+        if (remoteTree == null)
+        {
+            PrintError($"    Could not fetch remote tree for {upstream.TargetRepo}");
+            continue;
+        }
+
+        // Find skills with outbound drift
+        var toSync = new List<SkillDrift>();
+        foreach (var pluginMapping in upstream.Plugins)
+        {
+            if (pluginFilter != null && pluginMapping.LocalPlugin != pluginFilter) continue;
+            foreach (var skill in pluginMapping.Skills)
+            {
+                if (skillFilter != null && skill != skillFilter) continue;
+                var drift = ComputeSkillDrift(skill, pluginMapping.LocalPlugin,
+                    pluginMapping.TargetPlugin, remoteTree);
+                if (drift.OverallStatus != DriftStatus.InSync)
+                    toSync.Add(drift);
+            }
+        }
+
+        if (toSync.Count == 0)
+        {
+            PrintSuccess($"    All configured skills are in sync");
+            continue;
+        }
+
+        foreach (var drift in toSync)
+        {
+            var icon = drift.OverallStatus switch
+            {
+                DriftStatus.LocalAhead => "📤", DriftStatus.Diverged => "⚡",
+                DriftStatus.RemoteAhead => "📥", _ => "📝"
+            };
+            Console.WriteLine($"    {icon} {drift.SkillName}: {drift.OverallStatus}");
+
+            var changedFiles = drift.Files.Where(f => f.Status != DriftStatus.InSync).ToList();
+            foreach (var f in changedFiles)
+                Console.WriteLine($"        {f.Status}: {f.RelativePath}");
+
+            if (drift.OverallStatus == DriftStatus.RemoteAhead)
+            {
+                PrintInfo($"      ↑ Remote has changes we don't — consider merging back");
+                continue;
+            }
+        }
+
+        if (dryRun)
+        {
+            PrintInfo($"\n    (dry run — {toSync.Count} skill(s) would be synced via PR)");
+            continue;
+        }
+
+        // Clone, branch, copy, PR
+        var outboundSkills = toSync.Where(d =>
+            d.OverallStatus is DriftStatus.LocalAhead or DriftStatus.Diverged or DriftStatus.LocalOnly).ToList();
+
+        if (outboundSkills.Count == 0)
+        {
+            PrintInfo("    No outbound changes to push");
+            continue;
+        }
+
+        var tmpDir = Path.Combine(Path.GetTempPath(), $"upstream-sync-{upstream.Name}-{DateTime.Now:yyyyMMdd-HHmmss}");
+        try
+        {
+            Console.WriteLine($"    Cloning {upstream.TargetRepo}...");
+            var cloneResult = RunProcess("gh", $"repo clone {upstream.TargetRepo} \"{tmpDir}\" -- --depth=1 --branch={upstream.TargetBranch}");
+            if (cloneResult != 0)
+            {
+                PrintError($"    Failed to clone {upstream.TargetRepo}");
+                continue;
+            }
+
+            var skillNames = string.Join("-", outboundSkills.Select(s => s.SkillName));
+            var branchName = $"update/{skillNames}";
+            RunProcess("git", $"-C \"{tmpDir}\" checkout -b {branchName}");
+
+            // Copy files
+            foreach (var drift in outboundSkills)
+            {
+                var localSkillDir = Path.Combine(repoRoot, "plugins", drift.LocalPlugin, "skills", drift.SkillName);
+                var targetSkillDir = Path.Combine(tmpDir, "plugins", drift.TargetPlugin, "skills", drift.SkillName);
+
+                foreach (var f in drift.Files.Where(f => f.Status is DriftStatus.LocalOnly or DriftStatus.Diverged))
+                {
+                    var src = Path.Combine(localSkillDir, f.RelativePath);
+                    var dst = Path.Combine(targetSkillDir, f.RelativePath);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
+                    File.Copy(src, dst, true);
+                    if (verbose) Console.WriteLine($"      Copied {f.RelativePath}");
+                }
+            }
+
+            // Sync mcpServers from local plugin.json to target plugin.json
+            var syncedPlugins = outboundSkills.Select(s => (s.LocalPlugin, s.TargetPlugin)).Distinct().ToList();
+            foreach (var (localPlugin, targetPlugin) in syncedPlugins)
+            {
+                var localPjPath = Path.Combine(repoRoot, "plugins", localPlugin, "plugin.json");
+                var targetPjPath = Path.Combine(tmpDir, "plugins", targetPlugin, "plugin.json");
+                if (!File.Exists(localPjPath) || !File.Exists(targetPjPath)) continue;
+
+                var localPj = JsonNode.Parse(File.ReadAllText(localPjPath));
+                var targetPj = JsonNode.Parse(File.ReadAllText(targetPjPath));
+                if (localPj?["mcpServers"] is JsonObject localMcp && targetPj is JsonObject targetObj)
+                {
+                    targetObj["mcpServers"] = localMcp.DeepClone();
+                    File.WriteAllText(targetPjPath, targetObj.ToJsonString(
+                        new System.Text.Json.JsonSerializerOptions { WriteIndented = true }) + "\n");
+                    if (verbose) Console.WriteLine($"      Synced mcpServers to {targetPlugin}/plugin.json");
+                }
+            }
+
+            // Commit
+            RunProcess("git", $"-C \"{tmpDir}\" add -A");
+            var commitMsg = outboundSkills.Count == 1
+                ? $"Update {outboundSkills[0].SkillName} skill"
+                : $"Update {outboundSkills.Count} skills: {skillNames}";
+            RunProcess("git", $"-C \"{tmpDir}\" commit -m \"{commitMsg}\" -m \"Synced from copilot-skills\"");
+
+            // Push and create PR
+            RunProcess("git", $"-C \"{tmpDir}\" push origin {branchName}");
+
+            var prBody = BuildPrBody(outboundSkills, upstream);
+            var prTitle = commitMsg;
+
+            // Write PR body to temp file to avoid shell escaping issues
+            var prBodyFile = Path.Combine(tmpDir, ".pr-body.md");
+            File.WriteAllText(prBodyFile, prBody);
+
+            var prResult = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "gh",
+                Arguments = $"pr create --repo {upstream.TargetRepo} --base {upstream.TargetBranch} --head {branchName} --title \"{prTitle}\" --body-file \"{prBodyFile}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            using var prProcess = System.Diagnostics.Process.Start(prResult)!;
+            var prOutput = prProcess.StandardOutput.ReadToEnd().Trim();
+            var prError = prProcess.StandardError.ReadToEnd().Trim();
+            prProcess.WaitForExit();
+
+            if (prProcess.ExitCode == 0)
+                PrintSuccess($"    Created PR: {prOutput}");
+            else
+                PrintError($"    PR creation failed: {prError}");
+        }
+        finally
+        {
+            if (Directory.Exists(tmpDir))
+            {
+                try { Directory.Delete(tmpDir, true); }
+                catch { PrintWarning($"    Could not clean up {tmpDir}"); }
+            }
+        }
+    }
+}
+
+string BuildPrBody(List<SkillDrift> skills, UpstreamConfig upstream)
+{
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine("## Skill sync from copilot-skills");
+    sb.AppendLine();
+    sb.AppendLine("This PR syncs skill content from the copilot-skills marketplace.");
+    sb.AppendLine();
+    sb.AppendLine("### Changes");
+    sb.AppendLine();
+
+    foreach (var skill in skills)
+    {
+        sb.AppendLine($"#### `{skill.SkillName}`");
+        var pluginNote = skill.LocalPlugin != skill.TargetPlugin
+            ? $" (source: `{skill.LocalPlugin}`)"
+            : "";
+        sb.AppendLine($"Plugin: `{skill.TargetPlugin}`{pluginNote}");
+        sb.AppendLine();
+
+        foreach (var f in skill.Files.Where(f => f.Status != DriftStatus.InSync))
+        {
+            var label = f.Status switch
+            {
+                DriftStatus.LocalOnly => "new",
+                DriftStatus.Diverged => "modified",
+                DriftStatus.RemoteOnly => "remote-only (not touched)",
+                _ => f.Status.ToString()
+            };
+            sb.AppendLine($"- `{f.RelativePath}` ({label})");
+        }
+        sb.AppendLine();
+    }
+
+    sb.AppendLine("### Notes");
+    sb.AppendLine();
+    sb.AppendLine("- Only skill content files are synced (SKILL.md, references/, scripts/, assets/)");
+    sb.AppendLine("- plugin.json, marketplace.json, CODEOWNERS, and tests/ are NOT modified");
+    sb.AppendLine("- Please review and update any target-repo-specific files as needed");
+
+    return sb.ToString();
+}
+
+void RunUpstreamPull(string? upstreamName, string? pluginFilter, string? skillFilter,
+    bool dryRun, bool force, bool verbose)
+{
+    PrintHeader("Upstream pull (import remote changes)");
+    var upstreams = LoadUpstreams(upstreamName);
+    if (upstreams.Count == 0) return;
+
+    var totalPulled = 0;
+
+    foreach (var upstream in upstreams)
+    {
+        Console.WriteLine($"\n  {upstream.Name} ← {upstream.TargetRepo} ({upstream.TargetBranch})");
+        var remoteTree = GetRemoteTree(upstream.TargetRepo, upstream.TargetBranch);
+        if (remoteTree == null)
+        {
+            PrintError($"    Could not fetch remote tree for {upstream.TargetRepo}");
+            continue;
+        }
+
+        var toPull = new List<SkillDrift>();
+        foreach (var pluginMapping in upstream.Plugins)
+        {
+            if (pluginFilter != null && pluginMapping.LocalPlugin != pluginFilter) continue;
+            foreach (var skill in pluginMapping.Skills)
+            {
+                if (skillFilter != null && skill != skillFilter) continue;
+                var drift = ComputeSkillDrift(skill, pluginMapping.LocalPlugin,
+                    pluginMapping.TargetPlugin, remoteTree);
+                if (drift.OverallStatus is DriftStatus.RemoteAhead or DriftStatus.Diverged)
+                    toPull.Add(drift);
+            }
+        }
+
+        if (toPull.Count == 0)
+        {
+            PrintSuccess($"    All configured skills are up to date");
+            continue;
+        }
+
+        foreach (var drift in toPull)
+        {
+            var icon = drift.OverallStatus == DriftStatus.RemoteAhead ? "📥" : "⚡";
+            Console.WriteLine($"    {icon} {drift.SkillName}: {drift.OverallStatus}");
+
+            var inboundFiles = drift.Files
+                .Where(f => f.Status is DriftStatus.RemoteAhead or DriftStatus.Diverged or DriftStatus.RemoteOnly)
+                .ToList();
+
+            foreach (var f in inboundFiles)
+                Console.WriteLine($"        {f.Status}: {f.RelativePath}");
+
+            if (drift.OverallStatus == DriftStatus.Diverged && !force)
+            {
+                PrintWarning($"      ⚠ Skill has diverged — use --force to overwrite local with remote");
+                continue;
+            }
+
+            if (dryRun)
+            {
+                PrintInfo($"      (dry run — {inboundFiles.Count} file(s) would be pulled)");
+                continue;
+            }
+
+            // Fetch and write each remote file
+            var localSkillDir = Path.Combine(repoRoot, "plugins", drift.LocalPlugin, "skills", drift.SkillName);
+            var remotePrefix = $"plugins/{drift.TargetPlugin}/skills/{drift.SkillName}/";
+            var pulled = 0;
+
+            foreach (var f in inboundFiles)
+            {
+                var remotePath = remotePrefix + f.RelativePath;
+                var localPath = Path.Combine(localSkillDir, f.RelativePath);
+
+                // Fetch file content from remote
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "gh",
+                    Arguments = $"api repos/{upstream.TargetRepo}/contents/{remotePath} -H \"Accept: application/vnd.github.raw\" --method GET -F ref={upstream.TargetBranch}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var proc = System.Diagnostics.Process.Start(psi)!;
+                var content = proc.StandardOutput.ReadToEnd();
+                proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
+
+                if (proc.ExitCode != 0)
+                {
+                    PrintError($"      Failed to fetch {f.RelativePath}");
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
+                File.WriteAllText(localPath, content);
+                pulled++;
+                if (verbose) PrintSuccess($"      ✅ {f.RelativePath}");
+            }
+
+            totalPulled += pulled;
+            PrintSuccess($"      Pulled {pulled} file(s) for {drift.SkillName}");
+        }
+    }
+
+    if (!dryRun && totalPulled > 0)
+    {
+        Console.WriteLine();
+        PrintInfo($"  Pulled {totalPulled} file(s) total. Review changes with 'git diff' and commit when ready.");
+    }
+}
+
 
 void SyncFiles(string[] sourceFiles, string targetDir, string category,
     string? edition, bool exact, bool force, bool dryRun, bool verbose)
@@ -2347,6 +3273,21 @@ void PrintInfo(string text)
 
 record ToolTarget(string Name, string RootDir);
 record McpTarget(string Label, string Path, string WrapperKey);
+
+record UpstreamConfig(string Name, string TargetRepo, string TargetBranch, string Description, List<UpstreamPluginMapping> Plugins);
+record UpstreamPluginMapping(string LocalPlugin, string TargetPlugin, List<string> Skills);
+
+enum DriftStatus { InSync, LocalAhead, RemoteAhead, Diverged, LocalOnly, RemoteOnly }
+
+record FileDrift(string RelativePath, DriftStatus Status, string? LocalSha, string? RemoteSha);
+record SkillDrift(string SkillName, string LocalPlugin, string TargetPlugin, List<FileDrift> Files)
+{
+    public DriftStatus OverallStatus => Files.All(f => f.Status == DriftStatus.InSync) ? DriftStatus.InSync
+        : Files.Any(f => f.Status == DriftStatus.Diverged) ? DriftStatus.Diverged
+        : Files.All(f => f.Status is DriftStatus.LocalAhead or DriftStatus.LocalOnly or DriftStatus.InSync) ? DriftStatus.LocalAhead
+        : Files.All(f => f.Status is DriftStatus.RemoteAhead or DriftStatus.RemoteOnly or DriftStatus.InSync) ? DriftStatus.RemoteAhead
+        : DriftStatus.Diverged;
+}
 
 /// <summary>Represents the structure of an mcp.json configuration file.</summary>
 class McpConfig

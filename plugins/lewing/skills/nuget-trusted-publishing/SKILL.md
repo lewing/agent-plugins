@@ -5,6 +5,7 @@ description: >
   with short-lived tokens. USE FOR: trusted publishing, NuGet OIDC, keyless NuGet publish,
   migrate from NuGet API key, NuGet/login, secure NuGet publishing.
   DO NOT USE FOR: publishing to private feeds or Azure Artifacts (OIDC is nuget.org only).
+  INVOKES: shell (powershell or bash), edit, create, ask_user for guided repo setup.
 ---
 
 # NuGet Trusted Publishing Setup
@@ -13,7 +14,7 @@ Set up [NuGet trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-
 
 ## Prerequisites
 
-- **GitHub Actions** — this skill covers GitHub Actions setup specifically (trusted publishing also supports Azure DevOps, but that requires a different configuration flow)
+- **GitHub Actions** — this skill covers GitHub Actions setup only
 - **nuget.org account** — the user needs access to create trusted publishing policies
 
 ## When to Use This Skill
@@ -35,6 +36,8 @@ Use this skill when:
 
 ## Process
 
+> **Fast-path for greenfield repos**: When the user has a simple setup (one packable project, no existing publish workflow), don't gate on multi-turn assessment. Combine phases: create the workflow immediately, include nuget.org policy guidance, local pack recommendation, and filename-matching warning all in one response. The full phased process below is for complex or migration scenarios.
+
 ### Phase 1: Assess
 
 Inspect the repo and report findings before making any changes.
@@ -44,15 +47,16 @@ Inspect the repo and report findings before making any changes.
    - `<PackageType>McpServer</PackageType>` → **MCP server** (also a dotnet tool)
    - `<PackAsTool>true</PackAsTool>` → **Dotnet tool**
    - Class library (`IsPackable=true` or no `OutputType`) → **Library**
-   - `<OutputType>Exe</OutputType>` without `PackAsTool` → Skip, not a NuGet package
+   - `<OutputType>Exe</OutputType>` with `<IsPackable>true</IsPackable>` → **Application package** (not a tool, but still publishable)
+   - `<OutputType>Exe</OutputType>` without `PackAsTool` or `IsPackable` → Not packable by default (ask user if they intend to publish it)
 
 2. **Validate structure** for each project's type:
 
    | Type | Required |
    |------|----------|
    | All | `PackageId`, `Version` (in .csproj or Directory.Build.props) |
-   | Dotnet tool | `OutputType=Exe`, `PackAsTool`, `ToolCommandName` |
-   | MCP server | All dotnet tool requirements, plus `PackageType=McpServer`, `.mcp/server.json` included in package |
+   | Dotnet tool | `PackAsTool` (required); `ToolCommandName` (optional but recommended — defaults to assembly name) |
+   | MCP server | `PackageType=McpServer`, `.mcp/server.json` included in package |
    | Template | `PackageType=Template`, `.template.config/template.json` under content dir |
 
 3. **Find existing publish workflows** in `.github/workflows/` — look for `dotnet nuget push`, `nuget push`, or `dotnet pack`.
@@ -61,11 +65,13 @@ Inspect the repo and report findings before making any changes.
 
 5. **Report findings** to the user: classification, missing properties, version mismatches, existing workflows. For multi-project repos, note whether one workflow or separate workflows per package are needed. Offer to fix gaps — use `ask_user` before modifying project files.
 
-> ℹ️ See [references/package-types.md](references/package-types.md) for per-type details and required properties.
+> ❌ See [references/package-types.md](references/package-types.md) for per-type details and required properties.
 
 ### Phase 2: Local Verification
 
 Pack and verify locally before touching nuget.org — publishing errors waste a permanent version number.
+
+> ⚠️ **Always mention this step**, even if you defer running it. Tell the user: "Before your first publish, run `dotnet pack -c Release -o ./artifacts` to verify the .nupkg is created correctly."
 
 1. `dotnet pack -c Release -o ./artifacts` — verify `.nupkg` is created
 2. For tools/MCP servers: install from `./artifacts`, run `--help`, uninstall
@@ -84,7 +90,7 @@ This phase requires the user to act on nuget.org — guide them with exact value
    >
    > - **Repository Owner**: `{owner}`
    > - **Repository**: `{repo}`
-   > - **Workflow File**: `{filename}.yml` (or `.yaml`)
+   > - **Workflow File**: `{filename}.yml`
    > - **Environment**: `release` *(only if the workflow uses `environment:`; leave blank otherwise)*
 
    Policy ownership: the user chooses individual account or organization. Org-owned policies apply to all packages owned by that org.
@@ -98,13 +104,13 @@ This phase requires the user to act on nuget.org — guide them with exact value
 
    Optional: add **Required reviewers** for an approval gate.
 
-> ⚠️ Wait for the user to confirm they've created the policy before proceeding.
+> ⚠️ Wait for the user to confirm they've created the policy **before asking them to remove old API keys/secrets or before attempting to run/publish with the workflow**. Drafting or showing the workflow file itself is OK before confirmation.
 
 ### Phase 4: Workflow Setup
 
-Create or modify the publish workflow.
+Create or modify the publish workflow. **The workflow must always be created or shown in your response** — you may draft/show it even if the nuget.org policy is not yet confirmed, but do not guide the user to actually run/publish or remove old secrets until after confirmation.
 
-**Greenfield**: Create `publish.yml` from the template in [references/publish-workflow.md](references/publish-workflow.md). Adapt .NET version, project path, and environment name.
+**Greenfield**: Create `publish.yml` from the template in [references/publish-workflow.md](references/publish-workflow.md). Adapt .NET version, project path, and environment name. Ensure your output explicitly mentions `id-token: write` and `NuGet/login@v1`.
 
 **Migration** (existing workflow with API key): Modify in place —
 

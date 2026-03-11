@@ -1,5 +1,6 @@
 {
   "name": "dotnet-dnceng",
+  "category": "dotnet",
   "version": "0.1.0",
   "description": "Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows",
   "author": {
