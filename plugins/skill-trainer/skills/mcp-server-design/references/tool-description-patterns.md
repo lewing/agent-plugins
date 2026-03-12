@@ -1,16 +1,6 @@
 # Tool Description Patterns
 
-Tool descriptions are the primary routing signal for agent tool selection. Every description is loaded into the agent's context window on every session — whether or not the agent uses that tool. This creates a "context tax" where verbose descriptions waste tokens and dilute the signal that helps agents pick the right tool.
-
-## The Mental Model: Descriptions ≈ Skill Frontmatter
-
-Tool descriptions serve the same function as skill frontmatter `description:` fields:
-- Always loaded into context (not on-demand)
-- Used for selection/routing decisions
-- Competing with other descriptions for attention
-- Every word has a token cost multiplied by every session
-
-This means the same design constraints apply: be compact, be high-signal, defer detail.
+Tool descriptions are always loaded into context — every word costs tokens across every session. Same constraints as skill frontmatter: be compact, be high-signal, defer detail.
 
 ## Description Structure
 
@@ -27,7 +17,7 @@ The first few words should answer "what does this do?" — agents may truncate o
 ### Keep it compact
 The exact budget depends on your server's tool count and the agent's context window. A practical guideline: if you can't describe the tool's purpose in 1-2 sentences, the tool may be doing too much.
 
-**Evidence:** In helix.mcp, tightening 17 tool descriptions from an average of ~60 words to ~20 words removed ~550 words of always-loaded context. The "smelly descriptions" paper (arXiv:2602.14878) found fully augmented descriptions improve task success by ~6% but increase steps by ~67% — compact descriptions that defer detail hit a better tradeoff.
+**Evidence:** In helix.mcp, tightening 17 descriptions from ~60 to ~20 words removed ~550 words of always-loaded context. See `industry-alignment.md` for supporting research on the accuracy-vs-steps tradeoff.
 
 ## Where Detail Goes
 

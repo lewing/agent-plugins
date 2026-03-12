@@ -18,7 +18,7 @@ MCP servers for complex domains benefit from separating always-loaded routing in
 
 ### Why not just put everything in descriptions?
 
-Research supports this split: the "smelly descriptions" paper (arXiv:2602.14878) found that fully augmented descriptions improve task success by ~6% but increase execution steps significantly. Compact descriptions with on-demand depth achieve a better tradeoff — agents route correctly without paying the context cost on every session.
+Augmented descriptions improve task success but increase execution steps significantly (see `industry-alignment.md` for research evidence). Compact descriptions with on-demand depth achieve a better tradeoff.
 
 ## Exemplar: `helix_ci_guide`
 

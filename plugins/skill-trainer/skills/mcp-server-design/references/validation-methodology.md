@@ -56,49 +56,25 @@ If all models improve → strong signal. If only one family improves → the pat
 
 ## Test Templates
 
-### Description length test
-**Hypothesis:** Shorter descriptions improve tool selection accuracy.
+All tests follow the same structure:
 
 ```
-Task: [realistic CI investigation task]
-Baseline: Tool X has a 60-word description
-Change: Tool X has a 20-word description
-Measure: Tool selection accuracy, false positives, steps to completion
+Hypothesis: [one-sentence claim]
+Task: [realistic behavioral task — NOT a knowledge quiz]
+Baseline: [current state]
+Change: [one variable modified]
+Measure: [tool selection accuracy | false positives | steps to completion]
 Models: [3 models, 2+ families]
 ```
 
-### Name attractiveness test
-**Hypothesis:** Generic-sounding names attract false-positive calls.
+Example hypotheses:
 
-```
-Task: [task where Tool X is NOT the right choice]
-Baseline: Tool named "get_test_results"
-Change: Tool named "parse_uploaded_trx"
-Measure: False-positive calls to this tool
-Models: [3 models, 2+ families]
-```
-
-### Knowledge tool test
-**Hypothesis:** Adding a knowledge tool reduces wrong-first-choice errors.
-
-```
-Task: [task requiring domain-specific tool selection]
-Baseline: No knowledge tool, domain info in descriptions
-Change: Knowledge tool available, descriptions point to it
-Measure: Correct first tool choice, total steps
-Models: [3 models, 2+ families]
-```
-
-### Skip signal test
-**Hypothesis:** "Niche" labels reduce calls to low-frequency tools.
-
-```
-Task: [task where the niche tool is NOT appropriate]
-Baseline: Tool description without skip signal
-Change: Description includes "Niche — most repos use X instead"
-Measure: False-positive calls to the niche tool
-Models: [3 models, 2+ families]
-```
+| Test | Hypothesis | Key metric |
+|------|-----------|------------|
+| Description length | Shorter descriptions improve tool selection accuracy | Correct first-tool choice |
+| Name attractiveness | Generic names attract false-positive calls | False positives on niche tool |
+| Knowledge tool | On-demand knowledge reduces wrong-first-choice errors | Correct first choice, total steps |
+| Skip signals | "Niche" labels reduce calls to low-frequency tools | False positives on niche tool |
 
 ## Interpreting Results
 
@@ -118,14 +94,7 @@ Models: [3 models, 2+ families]
 
 ## Connection to Skill Training
 
-This methodology shares principles with skill training evals (see `skill-trainer-knowledge/references/training-methodology.md`):
-
-- **Behavioral over recall:** test what agents do, not what they know
-- **Multi-model validation:** patterns must work across families
-- **One change per cycle:** don't stack unvalidated changes
-- **Record everything:** future trainers need the data
-
-The difference: skill evals test how agents follow guidance. MCP design evals test how agents discover and select tools from descriptions. Same methodology, different unit of measurement.
+Same methodology as skill training evals (see `skill-trainer-knowledge/references/training-methodology.md`) — behavioral over recall, multi-model validation, one change per cycle. The difference: skill evals test guidance compliance; MCP evals test tool discovery and selection.
 
 ## Open Questions
 

@@ -7,13 +7,7 @@ How skills, agents, and other consumers should interact with MCP tools — and h
 Skills and agents should reference MCP tool capabilities using domain language, not opaque tool names.
 
 ### Why this matters
-Tool names are implementation details. They change when:
-- Tools are renamed for clarity (`helix_test_results` → `helix_parse_uploaded_trx`)
-- Tools move between MCP servers
-- Multiple MCP servers offer equivalent capabilities
-- The server is replaced entirely
-
-Skills that hardcode tool names break on every rename. Skills that use domain language survive.
+Tool names are implementation details — they change on renames, server moves, or replacements. Skills that hardcode tool names break; skills that use domain language survive.
 
 ### Examples
 
@@ -23,10 +17,8 @@ Skills that hardcode tool names break on every rename. Skills that use domain la
 | "Use `azdo_timeline` to find failed jobs" | "Get the build timeline and identify failed jobs" |
 | "Run `helix_status` for each job ID" | "Check the pass/fail summary for each Helix job" |
 
-### How agents map domain language to tools
-Agents discover tools from descriptions that are loaded into their context. When a skill says "search the build logs," the agent matches that intent against tool descriptions like "Search a build step log for matching lines." The match is semantic, not string-based.
-
-This is why tool descriptions matter so much — they're the target that domain language maps to. If the description clearly states what the tool does, the semantic mapping works regardless of the tool's name.
+### How it works
+Agents match domain language against tool descriptions semantically. "Search the build logs" matches "Search a build step log for matching lines" — regardless of tool name.
 
 ## CLI Examples as Semantic Bridges
 
@@ -41,8 +33,6 @@ issue_read(owner="dotnet", repo="runtime", issue_number=123, method="get_comment
 ```
 
 The CLI flags (`--repo`, `--comments`) encode the same semantics as MCP parameters. Models that know the CLI syntax can infer the MCP tool's parameter structure.
-
-**This is distinct from the "don't hardcode tool names" rule.** CLI examples describe intent through their syntax. MCP tool names are opaque identifiers. A skill can safely include `gh issue view --comments` as an example because the CLI syntax is self-describing — even if the underlying MCP tool changes, the domain concept is clear.
 
 ### When CLI examples help
 - The CLI tool is well-known (gh, az, dotnet, git)
