@@ -51,7 +51,6 @@ Analyze CI build and test status from Azure DevOps and Helix for dotnet reposito
 - [analysis-workflow.md](skills/ci-analysis/references/analysis-workflow.md)
 - [azdo-helix-reference.md](skills/ci-analysis/references/azdo-helix-reference.md)
 - [azure-cli.md](skills/ci-analysis/references/azure-cli.md)
-- [binlog-comparison.md](skills/ci-analysis/references/binlog-comparison.md)
 - [build-progression-analysis.md](skills/ci-analysis/references/build-progression-analysis.md)
 - [delegation-patterns.md](skills/ci-analysis/references/delegation-patterns.md)
 - [failure-interpretation.md](skills/ci-analysis/references/failure-interpretation.md)

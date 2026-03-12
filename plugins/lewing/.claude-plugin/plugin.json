@@ -11,5 +11,15 @@
   "skills": [
     "skills/nuget-trusted-publishing",
     "skills/stealth-squad"
-  ]
+  ],
+  "mcpServers": {
+    "mcp-binlog-tool": {
+      "command": "dotnet",
+      "args": [
+        "dnx",
+        "--yes",
+        "baronfel.binlog.mcp"
+      ]
+    }
+  }
 }
