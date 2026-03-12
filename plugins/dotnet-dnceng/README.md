@@ -82,9 +82,7 @@ Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: check
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
 
-- **[ado-dnceng-public](.claude-plugin/plugin.json#L25-L35)** — `npx` tool
-- **[ado-dnceng](.claude-plugin/plugin.json#L36-L46)** — `npx` tool
-- **[hlx](.claude-plugin/plugin.json#L47-L54)** — `dotnet` tool
-- **[maestro](.claude-plugin/plugin.json#L55-L62)** — `dotnet` tool
-- **[mcp-binlog-tool](.claude-plugin/plugin.json#L63-L70)** — `dotnet` tool
-- **[mihubot](.claude-plugin/plugin.json#L71-L74)** — https://mihubot.xyz/mcp
+- **[hlx](.claude-plugin/plugin.json#L25-L32)** — `dotnet` tool
+- **[maestro](.claude-plugin/plugin.json#L33-L40)** — `dotnet` tool
+- **[mcp-binlog-tool](.claude-plugin/plugin.json#L41-L48)** — `dotnet` tool
+- **[mihubot](.claude-plugin/plugin.json#L49-L52)** — https://mihubot.xyz/mcp
