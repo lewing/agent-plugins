@@ -18,6 +18,6 @@
     "skills/target-new-framework"
   ],
   "agents": [
-    "agents/FrameworkVersioning.agent.md"
+    "agents/framework-versioning.agent.md"
   ]
 }

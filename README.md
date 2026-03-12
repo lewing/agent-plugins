@@ -111,7 +111,7 @@ Skills and agents for .NET major version bumps: TFM updates, workload manifest c
 |-------|------------|
 | [target-new-framework](plugins/framework-versioning/skills/target-new-framework/SKILL.md) | [version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/version-bump-instructions.md), [workload-manifest-patterns](plugins/framework-versioning/skills/target-new-framework/references/workload-manifest-patterns.md), [workload-version-bump-instructions](plugins/framework-versioning/skills/target-new-framework/references/workload-version-bump-instructions.md) |
 
-**Agents:** [FrameworkVersioning.agent](plugins/framework-versioning/agents/FrameworkVersioning.agent.md)
+**Agents:** [framework-versioning.agent](plugins/framework-versioning/agents/framework-versioning.agent.md)
 
 ### [skill-trainer](plugins/skill-trainer/)
 

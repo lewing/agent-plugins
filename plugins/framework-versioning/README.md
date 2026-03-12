@@ -54,6 +54,6 @@ Perform the .NET major version bump (e.g., net11 to net12) in any dotnet repo. U
 
 ## Agents
 
-### [FrameworkVersioning](agents/FrameworkVersioning.agent.md)
+### [framework-versioning](agents/framework-versioning.agent.md)
 
 An agent that orchestrates the full .NET major version bump process across a repository. Drives discovery, updates, verification, and PR creation with human gates between phases. Uses the target-new-framework skill for domain knowledge.
