@@ -77,11 +77,17 @@ Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: check
 - [sdk-version-format.md](skills/flow-tracing/references/sdk-version-format.md)
 - [servicing-topology.md](skills/flow-tracing/references/servicing-topology.md)
 
+### [maestro-cli](skills/maestro-cli/SKILL.md)
+
+Query Maestro/BAR dependency flow data using the mstro CLI tool via bash. USE FOR: subscription health checks, build flow tracing, codeflow status, channel discovery, triggering subscription updates — when MCP tools aren't loaded or when scripting with JSON output and jq. Also use when investigating "is this subscription stale", "what's the latest build", "check backflow status". DO NOT USE FOR: tasks where maestro MCP tools are already available in context (prefer flow-analysis or flow-tracing skills when MCP server is loaded). INVOKES: bash (mstro CLI commands with --json output).
+
+**References:**
+- [maestro-cli-reference.md](skills/maestro-cli/references/maestro-cli-reference.md)
+
 ## MCP Servers
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
 
-- **[hlx](.claude-plugin/plugin.json#L25-L32)** — `dotnet` tool
-- **[maestro](.claude-plugin/plugin.json#L33-L40)** — `dotnet` tool
-- **[mcp-binlog-tool](.claude-plugin/plugin.json#L41-L48)** — `dotnet` tool
-- **[mihubot](.claude-plugin/plugin.json#L49-L52)** — https://mihubot.xyz/mcp
+- **[hlx](.claude-plugin/plugin.json#L26-L33)** — `dotnet` tool
+- **[maestro](.claude-plugin/plugin.json#L34-L41)** — `dotnet` tool
+- **[mihubot](.claude-plugin/plugin.json#L42-L45)** — https://mihubot.xyz/mcp

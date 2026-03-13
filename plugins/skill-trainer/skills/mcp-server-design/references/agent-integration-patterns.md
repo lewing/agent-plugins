@@ -44,6 +44,47 @@ The CLI flags (`--repo`, `--comments`) encode the same semantics as MCP paramete
 - The CLI syntax is obscure or misleading
 - The MCP tool does something the CLI can't
 
+## CLI-as-Skill: CLI Instead of MCP
+
+When a tool has both a CLI and an MCP server interface (same binary, same cache, same auth), agents can use the CLI via bash instead of loading MCP tool descriptions into context. This trades per-call process overhead for a dramatic reduction in context tax.
+
+### When to prefer CLI over MCP
+- **MCP server isn't configured** — the agent can still access the data via `dotnet tool install` + bash
+- **Scripting/chaining** — CLI commands pipe to jq, grep, and other shell tools naturally
+- **One-shot queries** — single command, structured JSON output, done
+- **Context tax matters** — 20 MCP tool descriptions (~1,300 tokens) vs. ~50 tokens for a skill description that says "use the CLI"
+
+### When to prefer MCP
+- **MCP server is already loaded** — tool descriptions are already in context, no point routing through bash
+- **Multi-turn investigation** — MCP tools integrate with the agent's reasoning loop more naturally
+- **Markdown-rich output** — MCP tools can return formatted output with emojis and visual indicators
+
+### Progressive discovery pattern
+Instead of documenting every command in the skill, teach the agent to discover:
+
+```bash
+tool --help              # All commands, one line each
+tool <command> --help    # Parameters for a specific command
+tool <command> --schema  # Response field names (for jq pipelines)
+tool guide               # Workflow-organized overview
+```
+
+This keeps the SKILL.md minimal (~80-100 lines) while giving agents full access on demand.
+
+### Design requirements for MCP servers supporting this pattern
+1. **Consistent `--json` flag** on all query commands
+2. **`--schema` per command** showing response field names — this was the #1 gap in multi-model eval (agents had to guess field names for jq pipelines)
+3. **Shared cache** between CLI and MCP server (SQLite WAL mode works well)
+4. **Same auth cascade** — CLI and MCP should accept the same credentials
+5. **`guide` command** — workflow-organized overview for agents that need the full picture
+
+### Evidence
+Multi-model eval (Claude Haiku 4.5, GPT-4.1, Gemini 3 Pro) on maestro-cli skill: avg 4.5/5. All models correctly used CLI instead of MCP. The only gap was JSON field name guessing — addressed by the `--schema` flag recommendation.
+
+### Examples in production
+- `mstro` (lewing/maestro.mcp) — 20 MCP tools, CLI-as-skill reduces context to ~50 tokens
+- `hlx` (lewing/helix.mcp) — 21 MCP tools, same pattern planned (issue #21)
+
 ## The INVOKES Pattern (Skill → MCP)
 
 Skills declare which MCP tool families they use via the `INVOKES` pattern in their frontmatter description:

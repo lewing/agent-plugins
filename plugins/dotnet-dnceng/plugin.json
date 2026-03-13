@@ -1,7 +1,7 @@
 {
   "name": "dotnet-dnceng",
   "category": "dotnet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Skills for .NET engineering infrastructure: CI/CD analysis, VMR codeflow, and build pipeline workflows",
   "author": {
     "name": "lewing"
@@ -19,7 +19,8 @@
   "skills": [
     "skills/ci-analysis",
     "skills/flow-analysis",
-    "skills/flow-tracing"
+    "skills/flow-tracing",
+    "skills/maestro-cli"
   ],
   "mcpServers": {
     "hlx": {
@@ -36,14 +37,6 @@
         "dnx",
         "--yes",
         "lewing.maestro.mcp"
-      ]
-    },
-    "mcp-binlog-tool": {
-      "command": "dotnet",
-      "args": [
-        "dnx",
-        "--yes",
-        "baronfel.binlog.mcp"
       ]
     },
     "mihubot": {

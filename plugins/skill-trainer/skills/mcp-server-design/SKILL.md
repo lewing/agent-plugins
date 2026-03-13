@@ -64,6 +64,7 @@ Mark all read-only tools as `readOnlyHint: true`. Required for Anthropic directo
 - Skills that consume your MCP tools should use domain language, not tool names
 - "Search the build logs" survives tool renames; "call `azdo_search_log`" doesn't
 - CLI examples act as semantic bridges — self-describing syntax maps naturally to tool parameters
+- **CLI-as-skill**: when your tool has both CLI and MCP modes, agents can use CLI via bash to avoid MCP context tax entirely
 
 → See `references/agent-integration-patterns.md`
 
