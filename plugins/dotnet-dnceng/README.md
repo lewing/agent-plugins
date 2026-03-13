@@ -81,9 +81,6 @@ Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: check
 
 Query Maestro/BAR dependency flow data using the mstro CLI tool via bash. USE FOR: subscription health checks, build flow tracing, codeflow status, channel discovery, triggering subscription updates — when MCP tools aren't loaded or when scripting with JSON output and jq. Also use when investigating "is this subscription stale", "what's the latest build", "check backflow status". DO NOT USE FOR: tasks where maestro MCP tools are already available in context (prefer flow-analysis or flow-tracing skills when MCP server is loaded). INVOKES: bash (mstro CLI commands with --json output).
 
-**References:**
-- [maestro-cli-reference.md](skills/maestro-cli/references/maestro-cli-reference.md)
-
 ## MCP Servers
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
