@@ -29,6 +29,9 @@ Complete command reference and workflow guide for the `mstro` CLI tool.
 
 ## Key JSON Response Fields
 
+> **Canonical source:** Run `mstro <command> --schema` for always-in-sync field names.
+> The fields below are a convenience snapshot for offline reference.
+
 When piping to `jq`, these are the fields you'll encounter most often:
 
 **`subscription-health --json`** returns:

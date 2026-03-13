@@ -52,7 +52,14 @@ Don't memorize commands. Discover them:
 ```bash
 mstro --help              # All commands, one line each
 mstro <command> --help    # Parameters for a specific command
+mstro <command> --schema  # JSON response field names (for jq pipelines)
 mstro guide               # Workflow-organized guide (~3KB)
+```
+
+Before writing jq queries, run `--schema` to see the response shape:
+```bash
+mstro subscription-health --schema   # → shows StaleSubs[].Id, .BuildsBehind, etc.
+mstro latest-build --schema          # → shows Id, Repository, Commit, etc.
 ```
 
 ## Common Patterns
@@ -88,8 +95,10 @@ mstro trigger-subscription <guid> --source-repository https://github.com/dotnet/
 
 ## Chaining with jq
 
+Use `mstro <command> --schema` to see all response fields before writing jq queries.
+
 ```bash
-# Count stale subscriptions
+# Count stale subscriptions (StaleSubs[].Id, .BuildsBehind, .SourceRepository, .ChannelName)
 mstro subscription-health --target-repository https://github.com/dotnet/dotnet --json | jq '.StaleSubs | length'
 
 # Filter channels by name
