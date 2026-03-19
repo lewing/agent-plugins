@@ -30,7 +30,7 @@ Identify the merge commit SHA in repo A from the PR number, issue number, commit
 
 ### Step 2: Check VMR Intake (source-manifest.json)
 
-Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch (usually `main`). Find the entry for repo A — the `commitSha` field shows the latest commit the VMR has consumed.
+Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch (usually `main`). This file is the authoritative record of what the VMR has actually consumed — subscription status reflects Maestro's bookkeeping, but the manifest reflects reality. Find the entry for repo A — the `commitSha` field shows the latest commit the VMR has consumed.
 
 **Determine if the change is included** (try in order):
 1. **Date comparison** (fastest): If the VMR commit date is months after the PR merge date, it's included.
