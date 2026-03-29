@@ -5,13 +5,49 @@ Distilled patterns from official docs, Arena empirical data, and real skill-buil
 ## Frontmatter Rules
 
 ### Supported fields
-| Field | Required | Notes |
-|-------|----------|-------|
-| `name` | Yes | Max 64 chars, kebab-case. Must match parent directory name. No reserved words (`anthropic`, `claude`, `openai`, `copilot`). |
-| `description` | Yes | Max 1024 chars (agentskills.io spec). This is the routing signal — invest here. |
-| `argument-hint` | No | Hint text shown in slash command input |
-| `user-invokable` | No | Controls visibility in `/skill-name` menu (default: true) |
-| `disable-model-invocation` | No | Prevents auto-triggering (default: false) |
+
+| Field | Required | agentskills.io | Copilot CLI | VS Code | Claude Code |
+|-------|:--------:|:-:|:-:|:-:|:-:|
+| `name` | Yes | ✅ | ✅ | ✅ | ✅ |
+| `description` | Yes | ✅ | ✅ | ✅ | ✅ |
+| `argument-hint` | No | — | ✅ | ✅ | ✅ |
+| `user-invocable` | No | — | ✅ | ✅ | ✅ |
+| `disable-model-invocation` | No | — | ✅ | ✅ | ✅ |
+| `allowed-tools` | No | ✅ᵉˣᵖ | — | — | ✅ |
+| `model` | No | — | — | — | ✅ |
+| `effort` | No | — | — | — | ✅ |
+| `context` | No | — | — | — | ✅ |
+| `agent` | No | — | — | — | ✅ |
+| `hooks` | No | — | — | — | ✅ |
+| `license` | No | ✅ | — | — | — |
+| `compatibility` | No | ✅ | — | — | — |
+| `metadata` | No | ✅ | — | — | — |
+
+Sources: [agentskills.io/specification](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills) (2026-03-24), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-03-18)
+
+### Claude Code-only field details
+| Field | Values | Purpose |
+|-------|--------|---------|
+| `model` | any model name | Override model for this skill |
+| `effort` | `low`, `medium`, `high`, `max` | Override effort level (`max` = Opus-only) |
+| `context` | `fork` | Run skill in isolated subagent (fresh context) |
+| `agent` | `Explore`, `Plan`, custom agent name | Delegate to a specific subagent type |
+| `hooks` | hook object | Skill-scoped hooks (same schema as global hooks) |
+| `allowed-tools` | tool name list | Restrict available tools for the skill |
+
+### Claude Code-specific skill features
+- **String substitutions**: `$ARGUMENTS`, `$ARGUMENTS[N]`, `$N`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_SKILL_DIR}` — replaced before prompt injection
+- **Dynamic context**: `` !`command` `` syntax runs a shell command and injects output into the skill body
+- **Context budget**: All skill descriptions share ~2% of context window; individual description fallback ~16K chars
+- **Size recommendation**: < 5000 tokens / < 500 lines (agentskills.io); our target is 2K-4K tokens for orchestrating skills
+
+### VS Code-specific features (2026-03-18)
+- `chat.agentSkillsLocations` setting for additional skill search paths
+- `/create-skill` command for AI-generated skills from chat
+- `/skills` command to open Configure Skills menu
+- `chatSkills` extension contribution point for VS Code extensions
+- `chat.useCustomizationsInParentRepositories` for monorepo support (parent `.github/skills/` discovered)
+- `/troubleshoot` command for debugging skill/hook loading
 
 ### Invocation modes
 | user-invokable | disable-model-invocation | Behavior |
@@ -143,14 +179,16 @@ Periodically re-fetch these for updates. Each has specific things we rely on.
 | GitHub: About Agent Skills | https://docs.github.com/en/copilot/concepts/agents/about-agent-skills | Skill discovery, SKILL.md naming, location paths (`.github/skills/`, `~/.copilot/skills/`) | 2026-02-20 |
 | GitHub: Creating Skills for CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-skills | CLI-specific skill creation, `/skills` command, `/plugin` marketplace | 2026-02-20 |
 | GitHub: Customizing CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/quickstart-for-customizing | Plugins, skills, hooks, agents overview for Copilot CLI | 2026-02-20 |
-| VS Code: Agent Skills | https://code.visualstudio.com/docs/copilot/customization/agent-skills | Frontmatter fields (`user-invokable`, `disable-model-invocation`, `argument-hint`), `name` must match directory name | 2026-02-20 |
+| VS Code: Agent Skills | https://code.visualstudio.com/docs/copilot/customization/agent-skills | Frontmatter fields (`user-invocable`, `disable-model-invocation`, `argument-hint`), `name` must match directory name, `/create-skill`, `chat.agentSkillsLocations`, `chatSkills` extension API | 2026-03-24 |
 | GitHub: Custom Instructions | https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot | Distinction between skills vs copilot-instructions.md vs .instructions.md | 2026-02-20 |
 | agentskills.io | https://agentskills.io | Open standard: name max 64 chars kebab-case, description max 1024 chars, reserved words list | 2026-02-20 |
+| agentskills.io Specification | https://agentskills.io/specification | Formal spec — `allowed-tools`, `license`, `compatibility`, `metadata` fields | 2026-03-24 |
 | agentskills.io (GitHub spec) | https://github.com/agentskills/agentskills | Formal spec repo — canonical field definitions, cross-platform support matrix | 2026-02-20 |
 | Skills, Tools & MCP Guide | https://aka.ms/skills/guidance | Skill classification (utility/workflow/analysis), routing patterns, USE FOR/DO NOT USE FOR, FOR SINGLE OPERATIONS, token budgets (500/5000 — we intentionally diverge to 4K/15K) | 2026-02-20 |
 | Plugin Marketplaces (Claude Code) | https://code.claude.com/docs/en/plugin-marketplaces | Marketplace creation and distribution — copilot-skills uses this model | 2026-02-20 |
 | Plugins Reference (Claude Code) | https://code.claude.com/docs/en/plugins-reference | Full plugin manifest schema (`plugin.json`), MCP server declaration | 2026-02-20 |
 | Skill Authoring Best Practices (Anthropic) | https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices | Progressive disclosure, context budgets, description <200 chars optimal, body ~50 lines target | 2026-02-22 |
+| Claude Code Skills (Anthropic) | https://docs.anthropic.com/en/docs/claude-code/skills | Frontmatter fields (`model`, `effort`, `context`, `agent`, `hooks`, `allowed-tools`), string substitutions (`$ARGUMENTS`, `${CLAUDE_SKILL_DIR}`), dynamic context (`` !`cmd` ``), 2% context budget | 2026-03-24 |
 | Sample Skills (Anthropic) | https://github.com/anthropics/skills | Reference skill implementations from Anthropic — good for structure patterns | 2026-02-22 |
 | Arena SKILL-FORMAT.md | `Blazor-Playground/arena` repo | Token budget validation (4K/15K/20K enforced), stop signal evidence (42→25 tool calls), domain examples > tool schemas | 2026-02-20 |
 | Arena decisions.md | `Blazor-Playground/arena` repo | 16+ architectural decisions, INVOKES A/B test data, model-specific behaviors | 2026-02-20 |
@@ -161,7 +199,8 @@ Periodically re-fetch these for updates. Each has specific things we rely on.
 ### What to check on review
 - **agentskills.io**: New supported frontmatter fields? Changed constraints on name/description?
 - **GitHub docs**: New skill locations? Changes to discovery mechanism? New CLI commands?
-- **VS Code docs**: New frontmatter fields? Changes to invocation mode behavior?
+- **VS Code docs**: New frontmatter fields? Changes to invocation mode behavior? New `/commands`?
+- **Claude Code docs (Anthropic)**: New frontmatter fields? Changes to substitution syntax? New context modes?
 - **aka.ms/skills/guidance**: Updated token budget recommendations? New classification types? New routing patterns?
 - **Anthropic best practices**: Updated progressive disclosure guidance? Changed description/body size recommendations?
 - **Claude Code docs**: Plugin manifest schema changes? New marketplace features?

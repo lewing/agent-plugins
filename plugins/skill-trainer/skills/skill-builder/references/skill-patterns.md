@@ -73,16 +73,24 @@ description: {One-line trigger-focused description. Include keywords that match 
 - `name`: lowercase with hyphens, no spaces or capitals (max 64 characters). Must match parent directory name. No reserved words (`anthropic`, `claude`, `openai`, `copilot`). Example: `ci-analysis`, not `CI Analysis`
 - `description`: max 1024 characters (agentskills.io spec). Be specific about both capabilities AND use cases — this is what Copilot uses to decide when to load the skill
 
-**Supported fields:**
-| Field | Required | Notes |
-|-------|----------|-------|
-| `name` | Yes | Kebab-case, max 64 chars, must match directory name |
-| `description` | Yes | Max 1024 chars — the routing signal. Invest here. |
-| `argument-hint` | No | Hint text shown in slash command input |
-| `user-invokable` | No | Controls `/skill-name` menu visibility (default: true) |
-| `disable-model-invocation` | No | Prevents auto-triggering (default: false) |
+**Supported fields (cross-tool compatibility):**
 
-> ⚠️ Fields not in this table (`license`, `version`) may be silently ignored or cause errors. Re-check official docs periodically as supported fields expand.
+| Field | Required | Copilot CLI | VS Code | Claude Code |
+|-------|:--------:|:-:|:-:|:-:|
+| `name` | Yes | ✅ | ✅ | ✅ |
+| `description` | Yes | ✅ | ✅ | ✅ |
+| `argument-hint` | No | ✅ | ✅ | ✅ |
+| `user-invocable` | No | ✅ | ✅ | ✅ |
+| `disable-model-invocation` | No | ✅ | ✅ | ✅ |
+| `allowed-tools` | No | — | — | ✅ |
+| `model` | No | — | — | ✅ |
+| `effort` | No | — | — | ✅ |
+| `context` | No | — | — | ✅ |
+| `agent` | No | — | — | ✅ |
+| `hooks` | No | — | — | ✅ |
+
+> ⚠️ Fields only supported by one tool are silently ignored by others. For cross-tool skills, stick to the top 5 (universal) fields. Claude Code-only fields (`model`, `effort`, `context`, `agent`, `hooks`) are safe to include — they won't break other tools.
+> Sources: [agentskills.io spec](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-03-18)
 
 #### Invocation Modes
 

@@ -81,7 +81,7 @@ Use the template from [references/skill-patterns.md](references/skill-patterns.m
 - **Stop signals**: Explicit bounds on when to stop (most impactful single addition — saved 10+ tool calls in Arena evals). See [references/skill-patterns.md](references/skill-patterns.md#stop-signals).
 - **Inline anti-patterns**: Embed the 3-5 most critical mistakes near the steps where they'd occur
 
-> ⚠️ **Frontmatter fields**: `name` and `description` are required. `argument-hint`, `user-invokable`, and `disable-model-invocation` are supported. Other fields (`license`, `version`) may be silently ignored or cause errors — avoid them. See [references/skill-patterns.md](references/skill-patterns.md#frontmatter-required) for details.
+> ⚠️ **Frontmatter fields**: `name` and `description` are required. Cross-tool fields: `argument-hint`, `user-invocable`, `disable-model-invocation`. Claude Code-only: `allowed-tools`, `model`, `effort`, `context`, `agent`, `hooks`. Unknown fields are silently ignored. See [references/skill-patterns.md](references/skill-patterns.md#frontmatter-required) for the full cross-tool compatibility table.
 
 > ❌ **NEVER** restate MCP tool parameter schemas or chain tool calls into rigid step-by-step recipes — the agent has tool descriptions in its context. DO provide examples that add domain context the tool description lacks (branch ref patterns, field names, log locations). See [references/anti-patterns.md](references/anti-patterns.md#re-documenting-mcp-tools).
 

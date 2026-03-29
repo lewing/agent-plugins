@@ -89,14 +89,15 @@ When agents are distributed via a plugin (`plugin.json`):
 
 ```json
 {
-  "agents": "agents/",           // directory — copies all .agent.md files
-  "agents": ["agents/My.agent.md"]  // array — copies specific files
+  "agents": ["agents/My.agent.md"]  // explicit file paths required
 }
 ```
 
+> ⚠️ Always use explicit file paths, never directory paths (`"agents/"`). Claude Code's manifest validator rejects directory paths with "agents: Invalid input" ([dotnet/skills#416](https://github.com/dotnet/skills/issues/416)). For `skills`, use arrays of specific paths or `./` prefix — bare strings like `"skills"` are also rejected ([arcade-skills#8](https://github.com/dotnet/arcade-skills/pull/8)).
+
 - Only `.agent.md` files are copied — no companion subdirectories
 - Companion skills must be declared separately in the `"skills"` array
-- The installer (`blazor-ai.cs` or similar) handles both paths
+- The installer (`blazor-ai.cs` or similar) handles file path arrays
 
 ## Naming Conventions
 

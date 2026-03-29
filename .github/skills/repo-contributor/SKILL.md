@@ -56,7 +56,7 @@ dotnet scripts/plugin-cli.cs -- all install --exact
 |--------|--------|
 | `--skill <name>` | Filter to one skill |
 | `--plugin <name>` | Filter to one plugin group |
-| `--scope personal\|project` | Install to `~/.copilot/skills/` (default) or `.github/skills/` |
+| `--scope personal\|project` | Install to `~/.copilot/skills/` + `~/.claude/skills/` (default) or `.github/skills/` |
 | `--force` | Overwrite without prompting |
 | `--exact` | Full sync — removes installed files not in repo (after backup) |
 | `--dry-run` | Preview without changes |

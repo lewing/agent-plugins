@@ -1901,9 +1901,11 @@ void RunMarketplaceInstall(string? targetDir, string? mirrorName, string[]? plug
     }
 
     // Build .github/copilot/settings.json
+    // Use extraKnownMarketplaces — read by all 3 tools (CLI, VS Code, Claude Code)
+    // CLI also reads "marketplaces" but VS Code does not
     var settingsObj = new JsonObject
     {
-        ["marketplaces"] = new JsonObject
+        ["extraKnownMarketplaces"] = new JsonObject
         {
             [marketplaceName] = new JsonObject
             {
@@ -1934,11 +1936,11 @@ void RunMarketplaceInstall(string? targetDir, string? mirrorName, string[]? plug
         var existingNode = JsonNode.Parse(existing);
         if (existingNode is JsonObject existingObj)
         {
-            // Add/update marketplace entry
-            if (existingObj["marketplaces"] is not JsonObject existingMkt)
+            // Add/update marketplace entry (use extraKnownMarketplaces for cross-tool compat)
+            if (existingObj["extraKnownMarketplaces"] is not JsonObject existingMkt)
             {
                 existingMkt = new JsonObject();
-                existingObj["marketplaces"] = existingMkt;
+                existingObj["extraKnownMarketplaces"] = existingMkt;
             }
             existingMkt[marketplaceName] = new JsonObject
             {
@@ -1964,11 +1966,75 @@ void RunMarketplaceInstall(string? targetDir, string? mirrorName, string[]? plug
 
     var output = settingsObj.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
-    Console.WriteLine($"\n  Target: {settingsPath}");
+    // Build .claude/settings.json — uses "extraKnownMarketplaces" (not "marketplaces")
+    var claudeSettingsObj = new JsonObject
+    {
+        ["extraKnownMarketplaces"] = new JsonObject
+        {
+            [marketplaceName] = new JsonObject
+            {
+                ["source"] = new JsonObject
+                {
+                    ["source"] = "github",
+                    ["repo"] = targetRepo
+                }
+            }
+        }
+    };
+    var claudeEnabledObj = new JsonObject();
+    foreach (var p in enablePlugins)
+        claudeEnabledObj[$"{p}@{marketplaceName}"] = true;
+    claudeSettingsObj["enabledPlugins"] = claudeEnabledObj;
+
+    var claudeDir = Path.Combine(dir, ".claude");
+    var claudeSettingsPath = Path.Combine(claudeDir, "settings.json");
+
+    if (File.Exists(claudeSettingsPath))
+    {
+        var existing = File.ReadAllText(claudeSettingsPath);
+        if (verbose) Console.WriteLine($"  Existing {claudeSettingsPath}:\n{existing}");
+
+        var existingNode = JsonNode.Parse(existing);
+        if (existingNode is JsonObject existingObj2)
+        {
+            if (existingObj2["extraKnownMarketplaces"] is not JsonObject existingMkt2)
+            {
+                existingMkt2 = new JsonObject();
+                existingObj2["extraKnownMarketplaces"] = existingMkt2;
+            }
+            existingMkt2[marketplaceName] = new JsonObject
+            {
+                ["source"] = new JsonObject
+                {
+                    ["source"] = "github",
+                    ["repo"] = targetRepo
+                }
+            };
+
+            if (existingObj2["enabledPlugins"] is not JsonObject existingEnabled2)
+            {
+                existingEnabled2 = new JsonObject();
+                existingObj2["enabledPlugins"] = existingEnabled2;
+            }
+            foreach (var p in enablePlugins)
+                existingEnabled2[$"{p}@{marketplaceName}"] = true;
+
+            claudeSettingsObj = existingObj2;
+        }
+    }
+
+    var claudeOutput = claudeSettingsObj.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    Console.WriteLine($"\n  Copilot CLI: {settingsPath}");
+    Console.WriteLine($"  Claude Code: {claudeSettingsPath}");
     Console.WriteLine($"  Marketplace: {marketplaceName} → {targetRepo}");
     Console.WriteLine($"  Plugins: {string.Join(", ", enablePlugins)}");
     Console.WriteLine();
+    Console.WriteLine("  .github/copilot/settings.json (uses \"extraKnownMarketplaces\"):");
     Console.WriteLine(output);
+    Console.WriteLine();
+    Console.WriteLine("  .claude/settings.json (uses \"extraKnownMarketplaces\"):");
+    Console.WriteLine(claudeOutput);
 
     if (dryRun)
     {
@@ -1979,7 +2045,12 @@ void RunMarketplaceInstall(string? targetDir, string? mirrorName, string[]? plug
     Directory.CreateDirectory(copilotDir);
     File.WriteAllText(settingsPath, output + "\n");
     PrintSuccess($"\n  Wrote {settingsPath}");
-    PrintInfo("  Commit this file so anyone cloning the repo gets the marketplace plugins automatically.");
+
+    Directory.CreateDirectory(claudeDir);
+    File.WriteAllText(claudeSettingsPath, claudeOutput + "\n");
+    PrintSuccess($"  Wrote {claudeSettingsPath}");
+    PrintInfo("  Commit both files so anyone cloning the repo gets the marketplace plugins automatically.");
+    PrintInfo("  Note: Copilot CLI reads 'marketplaces', Claude Code reads 'extraKnownMarketplaces'.");
 }
 
 // ============================================================================
@@ -2980,7 +3051,7 @@ List<McpTarget> GetMcpTargetPaths(string target, string edition)
     if (includeCopilot)
         result.Add(new("Copilot CLI", Path.Combine(home, ".copilot", "mcp-config.json"), "mcpServers"));
     if (includeClaude)
-        result.Add(new("Claude Code", Path.Combine(home, ".claude", "settings.local.json"), "mcpServers"));
+        result.Add(new("Claude Code", Path.Combine(home, ".claude.json"), "mcpServers"));
     if (includeVSCode)
     {
         foreach (var ed in GetEditions(edition))

@@ -74,6 +74,7 @@ Trace dependency flow across .NET repos through the VMR pipeline. USE FOR: check
 
 **References:**
 - [azdo-pipelines.md](skills/flow-tracing/references/azdo-pipelines.md)
+- [internal-vmr.md](skills/flow-tracing/references/internal-vmr.md)
 - [sdk-version-format.md](skills/flow-tracing/references/sdk-version-format.md)
 - [servicing-topology.md](skills/flow-tracing/references/servicing-topology.md)
 

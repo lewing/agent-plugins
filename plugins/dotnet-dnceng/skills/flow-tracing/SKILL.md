@@ -29,8 +29,9 @@ Trace dependency flow across .NET repositories through the VMR pipeline. Two wor
 Identify the merge commit SHA in repo A from the PR number, issue number, commit SHA, or description the user provides. If the PR isn't merged yet, stop — the change hasn't entered the pipeline.
 
 ### Step 2: Check VMR Intake (source-manifest.json)
+> ⚠️ **Internal branches** (`internal/release/*`) exist only on AzDO, not GitHub. Use the AzDO REST API to read files. See [references/internal-vmr.md](references/internal-vmr.md).
 
-Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch (usually `main`). This file is the authoritative record of what the VMR has actually consumed — subscription status reflects Maestro's bookkeeping, but the manifest reflects reality. Find the entry for repo A — the `commitSha` field shows the latest commit the VMR has consumed.
+Read `src/source-manifest.json` from `dotnet/dotnet` on the target VMR branch (usually `main` or `release/*`). This file is the authoritative record of what the VMR has actually consumed — subscription status reflects Maestro's bookkeeping, but the manifest reflects reality. Find the entry for repo A — the `commitSha` field shows the latest commit the VMR has consumed.
 
 **Determine if the change is included** (try in order):
 1. **Date comparison** (fastest): If the VMR commit date is months after the PR merge date, it's included.
@@ -85,6 +86,7 @@ The script decodes the SDK version, maps to a VMR branch, finds the build in AzD
 
 ## References
 
+- **Internal VMR branches**: See [references/internal-vmr.md](references/internal-vmr.md)
 - **SDK version format**: See [references/sdk-version-format.md](references/sdk-version-format.md)
 - **Servicing branch topology**: See [references/servicing-topology.md](references/servicing-topology.md)
 - **AzDO pipeline IDs and queries**: See [references/azdo-pipelines.md](references/azdo-pipelines.md)

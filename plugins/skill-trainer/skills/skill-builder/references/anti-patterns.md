@@ -66,6 +66,9 @@ description: "Analyze CI build and test status from Azure DevOps and Helix for d
 ### Missing "When to Use" section
 Without explicit trigger scenarios, agents either invoke the skill too broadly or miss cases where it should activate. List 5-8 concrete scenarios with the keywords users would actually say.
 
+### Cross-skill file path references
+Skills, instructions, and agents should never hardcode filesystem paths to another skill's `references/` files (e.g., `[table](../../plugins/skill-trainer/skills/skill-builder/references/skill-patterns.md)`). These paths break when skills move, and the referencing skill can't load files from another skill's context. Use semantic references instead: inline the key facts and say "invoke the **skill-builder** skill for details." This routes through skill discovery rather than filesystem coupling.
+
 ### Temp files for intermediate data
 ```powershell
 # ❌ BUG: Writing intermediate data to temp files triggers approval prompts
