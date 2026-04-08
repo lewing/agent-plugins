@@ -23,7 +23,7 @@ gpt-5.3-codex                        (OpenAI)
 gpt-5.2                              (OpenAI, alternative perspective)
 ```
 
-> ⚠️ `gemini-3-pro-preview` frequently fails with 400 errors on general-purpose task agents. Prefer OpenAI or Anthropic models until Gemini stability improves.
+> ⚠️ Model availability changes across CLI versions. Check your current model list before hardcoding model names in evals.
 
 ### 2. Construct the Test Prompt
 
@@ -66,7 +66,7 @@ Use the `task` tool with different `model` parameters:
 ```
 task agent_type="general-purpose" model="claude-opus-4.5" prompt="..."
 task agent_type="general-purpose" model="gpt-5.2" prompt="..."
-task agent_type="general-purpose" model="gemini-3-pro-preview" prompt="..."
+task agent_type="general-purpose" model="gpt-4.1" prompt="..."
 ```
 
 Launch all in parallel (mode="background") when possible.
