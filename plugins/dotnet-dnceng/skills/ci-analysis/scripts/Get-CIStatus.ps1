@@ -20,7 +20,8 @@
     The Helix work item name to query (requires -HelixJob).
 
 .PARAMETER Repository
-    The GitHub repository (owner/repo format). Default: dotnet/runtime
+    The GitHub repository (owner/repo format). When omitted, auto-detected from the
+    current directory's git remote via `gh repo view`. Falls back to dotnet/runtime.
 
 .PARAMETER Organization
     The Azure DevOps organization. Default: dnceng-public
@@ -64,6 +65,18 @@
     Useful when the failed work item doesn't have binlogs (e.g., unit tests) but you need
     to find related build tests that do have binlogs for deeper analysis.
 
+.PARAMETER HelixAccessToken
+    Access token for authenticated Helix API requests. Required when querying Helix jobs
+    started from internal AzDO builds (dnceng/internal) — without it the Helix API silently
+    returns empty arrays or '{"Message":"NotFound"}' rather than 401/403. The token is
+    appended as an access_token query parameter to all Helix API calls.
+
+    Prefer MCP Helix tools or the helix-cli skill when available — they handle auth
+    out-of-band. This parameter is a fallback for environments without those.
+
+    SECURITY: this is a secret. Do not log, echo, or include it in PR comments or
+    issue bodies. The script never prints the wrapped URL.
+
 .EXAMPLE
     .\Get-CIStatus.ps1 -BuildId 1276327
 
@@ -104,7 +117,7 @@ param(
     [Parameter(ParameterSetName = 'ClearCache', Mandatory = $true)]
     [switch]$ClearCache,
 
-    [string]$Repository = "dotnet/runtime",
+    [string]$Repository,
     [string]$Organization = "dnceng-public",
     [string]$Project = "cbb18261-c48f-4abb-8651-8cdcb5474649",
     [switch]$ShowLogs,
@@ -116,10 +129,34 @@ param(
     [int]$CacheTTLSeconds = 30,
     [switch]$ContinueOnError,
     [switch]$SearchMihuBot,
-    [switch]$FindBinlogs
+    [switch]$FindBinlogs,
+    [string]$HelixAccessToken
 )
 
 $ErrorActionPreference = "Stop"
+
+# Auto-detect repository from current working directory's git remote when not
+# explicitly supplied, so the script works naturally inside any dotnet repo
+# checkout. Falls back to dotnet/runtime to preserve historical behavior for
+# callers running outside a repo (for example, when invoking with -BuildId only).
+function Resolve-DefaultRepository {
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        return "dotnet/runtime"
+    }
+    $detected = & gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $detected) {
+        $trimmed = $detected.Trim()
+        if ($trimmed) {
+            Write-Verbose "Auto-detected repository from current directory: $trimmed"
+            return $trimmed
+        }
+    }
+    return "dotnet/runtime"
+}
+
+if (-not $Repository) {
+    $Repository = Resolve-DefaultRepository
+}
 
 #region Caching Functions
 
@@ -198,11 +235,16 @@ if (-not $NoCache) {
 
 function Get-UrlHash {
     param([string]$Url)
-    
+
+    # Normalize by redacting any access_token value before hashing so the cache
+    # key is stable across different token values while still distinguishing
+    # URLs based on whether auth parameters are present, and so the raw secret
+    # never contributes to filenames on disk.
+    $normalized = Format-RedactedUrl $Url
     $sha256 = [System.Security.Cryptography.SHA256]::Create()
     try {
         return [System.BitConverter]::ToString(
-            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
+            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($normalized))
         ).Replace("-", "")
     }
     finally {
@@ -226,11 +268,11 @@ function Get-CachedResponse {
         $age = (Get-Date) - $cacheInfo.LastWriteTime
 
         if ($age.TotalSeconds -lt $TTLSeconds) {
-            Write-Verbose "Cache hit for $Url (age: $([int]$age.TotalSeconds) sec)"
+            Write-Verbose "Cache hit for $(Format-RedactedUrl $Url) (age: $([int]$age.TotalSeconds) sec)"
             return Get-Content $cacheFile -Raw
         }
         else {
-            Write-Verbose "Cache expired for $Url"
+            Write-Verbose "Cache expired for $(Format-RedactedUrl $Url)"
         }
     }
 
@@ -253,7 +295,7 @@ function Set-CachedResponse {
     try {
         $Content | Set-Content -LiteralPath $tempFile -Force
         Move-Item -LiteralPath $tempFile -Destination $cacheFile -Force
-        Write-Verbose "Cached response for $Url"
+        Write-Verbose "Cached response for $(Format-RedactedUrl $Url)"
     }
     catch {
         # Clean up temp file on failure
@@ -292,7 +334,7 @@ function Invoke-CachedRestMethod {
     }
 
     # Make the actual request
-    Write-Verbose "GET $Uri"
+    Write-Verbose "GET $(Format-RedactedUrl $Uri)"
     $response = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec $TimeoutSec
 
     # Cache the response (unless skipping write)
@@ -697,17 +739,69 @@ function Get-AzDOTimeline {
 }
 
 function Get-FailedJobs {
-    param($Timeline)
+    param($Timeline, [int]$BuildId = 0)
 
     if ($null -eq $Timeline -or $null -eq $Timeline.records) {
         return @()
     }
 
-    $failedJobs = $Timeline.records | Where-Object {
-        $_.type -eq "Job" -and $_.result -eq "failed"
+    # Use a list to avoid O(n²) array concatenation
+    $failedJobs = [System.Collections.Generic.List[object]]::new()
+    foreach ($job in $Timeline.records) {
+        if ($job.type -eq "Job" -and $job.result -eq "failed") {
+            $failedJobs.Add($job)
+        }
     }
 
-    return $failedJobs
+    # Check for retried jobs: result is null/pending but previousAttempts has failures
+    if ($BuildId -gt 0) {
+        $retriedJobs = @($Timeline.records | Where-Object {
+            $_.type -eq "Job" -and $null -eq $_.result -and $null -ne $_.previousAttempts -and $_.previousAttempts.Count -gt 0
+        })
+        foreach ($job in $retriedJobs) {
+            # Iterate all previous attempts (most recent first) to find failed ones
+            $attempts = @($job.previousAttempts)
+            for ($i = $attempts.Count - 1; $i -ge 0; $i--) {
+                $prevTimelineId = $attempts[$i].timelineId
+                if (-not $prevTimelineId) { continue }
+                try {
+                    $prevUrl = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$BuildId/timeline/${prevTimelineId}?api-version=7.0"
+                    $prevTimeline = Invoke-CachedRestMethod -Uri $prevUrl -TimeoutSec $TimeoutSec -AsJson
+                    if ($prevTimeline -and $prevTimeline.records) {
+                        $prevFailed = @($prevTimeline.records | Where-Object {
+                            $_.type -eq "Job" -and $_.result -eq "failed" -and $_.name -eq $job.name
+                        })
+                        if ($prevFailed.Count -gt 0) {
+                            $attemptNum = $attempts[$i].attempt
+                            Write-Host "  Found failed attempt $attemptNum for retried job: $($job.name)" -ForegroundColor Yellow
+                            foreach ($pf in $prevFailed) { $failedJobs.Add($pf) }
+                            # Store child task records in script scope for downstream lookups
+                            # (do NOT mutate $Timeline.records — that corrupts counts)
+                            $failedJobIds = @($prevFailed | ForEach-Object { $_.id })
+                            $childTasks = @($prevTimeline.records | Where-Object {
+                                $_.type -eq "Task" -and $_.parentId -in $failedJobIds
+                            })
+                            if ($childTasks.Count -gt 0) {
+                                if (-not $script:retriedTaskRecords) {
+                                    $script:retriedTaskRecords = [System.Collections.Generic.List[object]]::new()
+                                }
+                                foreach ($ct in $childTasks) {
+                                    if ($ct.id -notin @($script:retriedTaskRecords | ForEach-Object { $_.id })) {
+                                        $script:retriedTaskRecords.Add($ct)
+                                    }
+                                }
+                            }
+                            break  # Found a failed attempt, no need to check older ones
+                        }
+                    }
+                } catch {
+                    Write-Host "  Could not fetch previous attempt timeline for $($job.name)" -ForegroundColor Gray
+                }
+            }
+        }
+    }
+
+    return @($failedJobs)
 }
 
 function Get-CanceledJobs {
@@ -731,8 +825,14 @@ function Get-HelixJobInfo {
         return @()
     }
 
+    # Search both current timeline and retried task records
+    $allRecords = @($Timeline.records)
+    if ($script:retriedTaskRecords -and $script:retriedTaskRecords.Count -gt 0) {
+        $allRecords += @($script:retriedTaskRecords)
+    }
+
     # Find tasks in this job that mention Helix
-    $helixTasks = $Timeline.records | Where-Object {
+    $helixTasks = $allRecords | Where-Object {
         $_.parentId -eq $JobId -and
         $_.name -like "*Helix*" -and
         $_.result -eq "failed"
@@ -886,10 +986,13 @@ function Extract-HelixLogUrls {
 
     $urls = @()
 
+    # Normalize line breaks that might split URLs (same as Extract-HelixUrls)
+    $normalizedContent = $LogContent -replace "`r`n", "" -replace "`n", ""
+
     # Match Helix console log URLs from log content
     # Pattern: https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{workItemName}/console
     $pattern = 'https://helix\.dot\.net/api/[^/]+/jobs/([a-f0-9-]+)/workitems/([^/\s]+)/console'
-    $urlMatches = [regex]::Matches($LogContent, $pattern)
+    $urlMatches = [regex]::Matches($normalizedContent, $pattern)
 
     foreach ($match in $urlMatches) {
         $urls += @{
@@ -908,6 +1011,95 @@ function Extract-HelixLogUrls {
     }
 
     return $uniqueUrls.Values
+}
+
+function Invoke-HelixLogAnalysis {
+    param(
+        [string]$LogContent,           # AzDO build log content (already fetched)
+        [hashtable]$JobDetail,         # The jobDetail hashtable to update (mutated in place)
+        [string]$JobName,              # For PR correlation
+        [string]$TaskName,             # For PR correlation
+        [switch]$FetchLogs,            # Whether to fetch console logs (maps to -ShowLogs)
+        [switch]$SearchMihuBot         # Whether to search MihuBot
+    )
+
+    # Extract Helix console log URLs from the build log
+    $helixUrls = Extract-HelixUrls -LogContent $LogContent
+    if ($helixUrls.Count -eq 0) {
+        return $null
+    }
+
+    if ($FetchLogs) {
+        Write-Host "`n  Helix Console Logs:" -ForegroundColor Yellow
+
+        foreach ($url in $helixUrls | Select-Object -First 3) {
+            Write-Host "`n  $url" -ForegroundColor Gray
+
+            # Extract work item name from URL for known issue search
+            $workItemName = ""
+            if ($url -match '/workitems/([^/]+)/console') {
+                $workItemName = $Matches[1]
+                $JobDetail.helixWorkItems += $workItemName
+            }
+
+            $helixLog = Get-HelixConsoleLog -Url $url
+            if ($helixLog) {
+                $failureInfo = Format-TestFailure -LogContent $helixLog
+                if ($failureInfo) {
+                    Write-Host $failureInfo -ForegroundColor White
+
+                    # Categorize failure from log content
+                    # Guard: never downgrade helix-infra-failure — it indicates root cause is infrastructure
+                    if ($failureInfo -match 'Timed Out \(timeout') {
+                        if ($JobDetail.errorCategory -notin @("helix-infra-failure")) {
+                            $JobDetail.errorCategory = "test-timeout"
+                        }
+                    } elseif ($failureInfo -match 'Exit Code:\s*(139|134|-4)' -or $failureInfo -match 'createdump') {
+                        if ($JobDetail.errorCategory -notin @("crash", "helix-infra-failure")) {
+                            $JobDetail.errorCategory = "crash"
+                        }
+                    } elseif ($failureInfo -match 'Traceback \(most recent call last\)' -and $helixLog -match 'Tests run:.*Failures:\s*0') {
+                        if ($JobDetail.errorCategory -notin @("crash", "test-timeout", "helix-infra-failure")) {
+                            $JobDetail.errorCategory = "tests-passed-reporter-failed"
+                        }
+                    } elseif ($JobDetail.errorCategory -in @("unclassified", "build-error", "test-failure")) {
+                        $JobDetail.errorCategory = "test-failure"
+                    }
+                    if (-not $JobDetail.errorSnippet) {
+                        $JobDetail.errorSnippet = $failureInfo.Substring(0, [Math]::Min(200, $failureInfo.Length))
+                    }
+
+                    Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
+                }
+                else {
+                    # No failure pattern matched — show tail of log
+                    $lines = $helixLog -split "`n"
+                    $lastLines = $lines | Select-Object -Last 20
+                    $tailText = $lastLines -join "`n"
+                    Write-Host $tailText -ForegroundColor White
+                    if (-not $JobDetail.errorSnippet) {
+                        $JobDetail.errorSnippet = $tailText.Substring(0, [Math]::Min(200, $tailText.Length))
+                    }
+                    Show-KnownIssues -TestName $workItemName -ErrorMessage $tailText -IncludeMihuBot:$SearchMihuBot
+                }
+            }
+        }
+    }
+    else {
+        Write-Host "`n  Helix logs available (use -ShowLogs to fetch):" -ForegroundColor Yellow
+        foreach ($url in $helixUrls | Select-Object -First 3) {
+            Write-Host "    $url" -ForegroundColor Gray
+        }
+    }
+
+    # Return correlation data for PR correlation tracking
+    return @{
+        TaskName = $TaskName
+        JobName = $JobName
+        Errors = @()
+        HelixLogs = @($helixUrls)
+        FailedTests = @($JobDetail.helixWorkItems)
+    }
 }
 
 #endregion Log Parsing Functions
@@ -1302,10 +1494,43 @@ function Get-LocalTestFailures {
 
 #region Helix API Functions
 
+function Get-HelixApiUrl {
+    <#
+    .SYNOPSIS
+        Appends -HelixAccessToken as an access_token query parameter to a Helix API URL.
+    .DESCRIPTION
+        Returns the URL unchanged when no token was supplied. Internal AzDO Helix jobs
+        (dnceng/internal) silently return empty results without auth; the token enables
+        access. The token is URL-encoded so values containing '+', '/', '=' or similar
+        round-trip correctly. Callers must avoid printing the returned URL; verbose
+        logging paths in this script use Format-RedactedUrl to strip the token first.
+    #>
+    param([string]$Url)
+    if ($HelixAccessToken) {
+        $separator = if ($Url.Contains('?')) { '&' } else { '?' }
+        $encoded = [uri]::EscapeDataString($HelixAccessToken)
+        return "${Url}${separator}access_token=$encoded"
+    }
+    return $Url
+}
+
+function Format-RedactedUrl {
+    <#
+    .SYNOPSIS
+        Returns a URL with any access_token query parameter value replaced by ***.
+    .DESCRIPTION
+        Used for verbose logging and cache-key computation so the Helix access token
+        never appears in -Verbose output, cache filenames, or other diagnostic paths.
+    #>
+    param([string]$Url)
+    if (-not $Url) { return $Url }
+    return [regex]::Replace($Url, '(?i)(access_token=)[^&]*', '${1}***')
+}
+
 function Get-HelixJobDetails {
     param([string]$JobId)
 
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId"
+    $url = Get-HelixApiUrl "https://helix.dot.net/api/2019-06-17/jobs/$JobId"
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
@@ -1320,7 +1545,7 @@ function Get-HelixJobDetails {
 function Get-HelixWorkItems {
     param([string]$JobId)
 
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems"
+    $url = Get-HelixApiUrl "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems"
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
@@ -1345,7 +1570,7 @@ function Get-HelixWorkItemFiles {
     param([string]$JobId, [string]$WorkItemName)
 
     $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem/files"
+    $url = Get-HelixApiUrl "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem/files"
 
     try {
         $files = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
@@ -1361,7 +1586,7 @@ function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
 
     $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem"
+    $url = Get-HelixApiUrl "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem"
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
@@ -1391,8 +1616,10 @@ function Get-HelixWorkItemDetails {
 function Get-HelixConsoleLog {
     param([string]$Url)
 
+    # Wrap inside the function so the caller can display $Url without leaking the token.
+    $authedUrl = Get-HelixApiUrl $Url
     try {
-        $response = Invoke-CachedRestMethod -Uri $Url -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $authedUrl -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
@@ -1783,6 +2010,7 @@ try {
     $lastBuildJobSummary = $null
 
     foreach ($currentBuildId in $buildIds) {
+        $script:retriedTaskRecords = $null  # Reset per build to prevent cross-build leakage
         Write-Host "`n=== Azure DevOps Build $currentBuildId ===" -ForegroundColor Yellow
         Write-Host "URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Gray
 
@@ -1816,7 +2044,7 @@ try {
         }
 
         # Get failed jobs
-        $failedJobs = Get-FailedJobs -Timeline $timeline
+        $failedJobs = Get-FailedJobs -Timeline $timeline -BuildId $currentBuildId
 
         # Get canceled jobs (different from failed - typically due to dependency failures)
         $canceledJobs = Get-CanceledJobs -Timeline $timeline
@@ -2007,71 +2235,12 @@ try {
                                     $jobDetail.errorSnippet = ($failures | Select-Object -First 3 | ForEach-Object { $_.TestName }) -join "; "
                                 }
 
-                            # Extract and optionally fetch Helix URLs
-                            $helixUrls = Extract-HelixUrls -LogContent $logContent
-
-                            if ($helixUrls.Count -gt 0 -and $ShowLogs) {
-                                Write-Host "`n  Helix Console Logs:" -ForegroundColor Yellow
-
-                                foreach ($url in $helixUrls | Select-Object -First 3) {
-                                    Write-Host "`n  $url" -ForegroundColor Gray
-
-                                    # Extract work item name from URL for known issue search
-                                    $workItemName = ""
-                                    if ($url -match '/workitems/([^/]+)/console') {
-                                        $workItemName = $Matches[1]
-                                        $jobDetail.helixWorkItems += $workItemName
-                                    }
-
-                                    $helixLog = Get-HelixConsoleLog -Url $url
-                                    if ($helixLog) {
-                                        $failureInfo = Format-TestFailure -LogContent $helixLog
-                                        if ($failureInfo) {
-                                            Write-Host $failureInfo -ForegroundColor White
-
-                                            # Categorize failure from log content
-                                            if ($failureInfo -match 'Timed Out \(timeout') {
-                                                $jobDetail.errorCategory = "test-timeout"
-                                            } elseif ($failureInfo -match 'Exit Code:\s*(139|134|-4)' -or $failureInfo -match 'createdump') {
-                                                # Crash takes highest precedence — don't downgrade
-                                                if ($jobDetail.errorCategory -notin @("crash")) {
-                                                    $jobDetail.errorCategory = "crash"
-                                                }
-                                            } elseif ($failureInfo -match 'Traceback \(most recent call last\)' -and $helixLog -match 'Tests run:.*Failures:\s*0') {
-                                                # Work item failed (non-zero exit from reporter crash) but all tests passed.
-                                                # The Python traceback is from Helix infrastructure, not from the test itself.
-                                                if ($jobDetail.errorCategory -notin @("crash", "test-timeout")) {
-                                                    $jobDetail.errorCategory = "tests-passed-reporter-failed"
-                                                }
-                                            } elseif ($jobDetail.errorCategory -eq "unclassified") {
-                                                $jobDetail.errorCategory = "test-failure"
-                                            }
-                                            if (-not $jobDetail.errorSnippet) {
-                                                $jobDetail.errorSnippet = $failureInfo.Substring(0, [Math]::Min(200, $failureInfo.Length))
-                                            }
-
-                                            # Search for known issues
-                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
-                                        }
-                                        else {
-                                            # No failure pattern matched — show tail of log
-                                            $lines = $helixLog -split "`n"
-                                            $lastLines = $lines | Select-Object -Last 20
-                                            $tailText = $lastLines -join "`n"
-                                            Write-Host $tailText -ForegroundColor White
-                                            if (-not $jobDetail.errorSnippet) {
-                                                $jobDetail.errorSnippet = $tailText.Substring(0, [Math]::Min(200, $tailText.Length))
-                                            }
-                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $tailText -IncludeMihuBot:$SearchMihuBot
-                                        }
-                                    }
-                                }
-                            }
-                            elseif ($helixUrls.Count -gt 0) {
-                                Write-Host "`n  Helix logs available (use -ShowLogs to fetch):" -ForegroundColor Yellow
-                                foreach ($url in $helixUrls | Select-Object -First 3) {
-                                    Write-Host "    $url" -ForegroundColor Gray
-                                }
+                            # Extract and optionally fetch Helix URLs via shared analysis function
+                            $helixResult = Invoke-HelixLogAnalysis -LogContent $logContent `
+                                -JobDetail $jobDetail -JobName $job.name -TaskName $task.name `
+                                -FetchLogs:$ShowLogs -SearchMihuBot:$SearchMihuBot
+                            if ($helixResult) {
+                                $allFailuresForCorrelation += $helixResult
                             }
                         }
                     }
@@ -2079,7 +2248,12 @@ try {
             }
                 else {
                     # No Helix tasks - this is a build failure, extract actual errors
-                    $buildTasks = $timeline.records | Where-Object {
+                    # Check both current timeline and retried task records
+                    $taskRecords = @($timeline.records)
+                    if ($script:retriedTaskRecords -and $script:retriedTaskRecords.Count -gt 0) {
+                        $taskRecords += @($script:retriedTaskRecords)
+                    }
+                    $buildTasks = $taskRecords | Where-Object {
                         $_.parentId -eq $job.id -and $_.result -eq "failed"
                     }
 
@@ -2096,34 +2270,44 @@ try {
                                 $buildErrors = Extract-BuildErrors -LogContent $logContent
 
                                 if ($buildErrors.Count -gt 0) {
-                                    # Collect for PR correlation
-                                    $allFailuresForCorrelation += @{
-                                        TaskName = $task.name
-                                        JobName = $job.name
-                                        Errors = $buildErrors
-                                        HelixLogs = @()
-                                        FailedTests = @()
-                                    }
                                     $jobDetail.errorCategory = "build-error"
                                     if (-not $jobDetail.errorSnippet) {
                                         $snippet = ($buildErrors | Select-Object -First 2) -join "; "
                                         $jobDetail.errorSnippet = $snippet.Substring(0, [Math]::Min(200, $snippet.Length))
                                     }
 
-                                    # Extract Helix log URLs from the full log content
+                                    # Check for Helix log URLs — if found, run full Helix analysis
                                     $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
 
                                     if ($helixLogUrls.Count -gt 0) {
-                                        Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
-                                        foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
-                                            Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
-                                            Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+                                        # Helix URLs found — this task used Helix, so it's not a pure build error.
+                                        # Reclassify based on infra markers in raw log content
+                                        $hasInfraMarkers = $logContent -match 'DEVICE_NOT_FOUND|XHarness.*timeout|emulator.*boot|simulator.*not found|provisioning.*failed'
+                                        if ($hasInfraMarkers) {
+                                            $jobDetail.errorCategory = "helix-infra-failure"
+                                        } else {
+                                            $jobDetail.errorCategory = "test-failure"
                                         }
-                                        if ($helixLogUrls.Count -gt 5) {
-                                            Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+
+                                        # Run full Helix console log analysis (same as the Helix branch)
+                                        $helixResult = Invoke-HelixLogAnalysis -LogContent $logContent `
+                                            -JobDetail $jobDetail -JobName $job.name -TaskName $task.name `
+                                            -FetchLogs:$ShowLogs -SearchMihuBot:$SearchMihuBot
+                                        if ($helixResult) {
+                                            # Merge build errors into the Helix correlation entry
+                                            $helixResult.Errors = $buildErrors
+                                            $allFailuresForCorrelation += $helixResult
                                         }
                                     }
                                     else {
+                                        # Pure build error — no Helix involvement
+                                        $allFailuresForCorrelation += @{
+                                            TaskName = $task.name
+                                            JobName = $job.name
+                                            Errors = $buildErrors
+                                            HelixLogs = @()
+                                            FailedTests = @()
+                                        }
                                         Write-Host "  Build errors:" -ForegroundColor Red
                                         foreach ($err in $buildErrors | Select-Object -First 5) {
                                             Write-Host "    $err" -ForegroundColor White
@@ -2135,6 +2319,12 @@ try {
 
                                     # Search for known issues
                                     Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
+
+                                    # Check for published test run URLs in the log
+                                    $testRunUrls = Extract-TestRunUrls -LogContent $logContent
+                                    if ($testRunUrls.Count -gt 0) {
+                                        Show-TestRunResults -TestRunUrls $testRunUrls -Org "https://dev.azure.com/$Organization"
+                                    }
                                 }
                                 else {
                                     Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray

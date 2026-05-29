@@ -82,15 +82,16 @@ description: {One-line trigger-focused description. Include keywords that match 
 | `argument-hint` | No | ✅ | ✅ | ✅ |
 | `user-invocable` | No | ✅ | ✅ | ✅ |
 | `disable-model-invocation` | No | ✅ | ✅ | ✅ |
-| `allowed-tools` | No | — | — | ✅ |
-| `model` | No | — | — | ✅ |
+| `allowed-tools` | No | ✅ᵈ | — | ✅ |
+| `model` | No | ✅ᵃ (v1.0.22+) | — | ✅ |
 | `effort` | No | — | — | ✅ |
 | `context` | No | — | — | ✅ |
 | `agent` | No | — | — | ✅ |
 | `hooks` | No | — | — | ✅ |
+| `license` | No | ✅ᵈ | — | — |
 
-> ⚠️ Fields only supported by one tool are silently ignored by others. For cross-tool skills, stick to the top 5 (universal) fields. Claude Code-only fields (`model`, `effort`, `context`, `agent`, `hooks`) are safe to include — they won't break other tools.
-> Sources: [agentskills.io spec](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-03-18)
+> ⚠️ Fields only supported by one tool are silently ignored by others. For cross-tool skills, stick to the top 6 (universal + `allowed-tools`) fields. `model` now works in Copilot CLI (v1.0.22+) and Claude Code. Claude Code-only fields (`effort`, `context`, `agent`, `hooks`) are safe to include — they won't break other tools. Copilot CLI also supports `license`.
+> Sources: [agentskills.io spec](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills), [Copilot CLI releases](https://github.com/github/copilot-cli/releases), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-04-08)
 
 #### Invocation Modes
 

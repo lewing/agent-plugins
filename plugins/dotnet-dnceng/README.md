@@ -55,6 +55,7 @@ Analyze CI build and test status from Azure DevOps and Helix for dotnet reposito
 - [delegation-patterns.md](skills/ci-analysis/references/delegation-patterns.md)
 - [failure-interpretation.md](skills/ci-analysis/references/failure-interpretation.md)
 - [helix-artifacts.md](skills/ci-analysis/references/helix-artifacts.md)
+- [kbe-issue-creation.md](skills/ci-analysis/references/kbe-issue-creation.md)
 - [manual-investigation.md](skills/ci-analysis/references/manual-investigation.md)
 - [recommendation-generation.md](skills/ci-analysis/references/recommendation-generation.md)
 - [script-modes.md](skills/ci-analysis/references/script-modes.md)

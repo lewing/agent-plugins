@@ -20,7 +20,7 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 **Accessing services**: Start with MCP tools if available. Get repo-specific CI guidance early — it provides the investigation workflow, tool selection, failure patterns, and classification algorithm for that repo. The guidance evolves with the toolset, so it always reflects current capabilities.
 
-If MCP tools aren't loaded, the Helix CLI tool and the **helix-cli** skill provide the same capabilities via bash with progressive discovery.
+If MCP tools aren't loaded, the Helix CLI tool provides the same capabilities via bash with progressive discovery.
 
 For AzDO, multiple tool sets may exist for different organizations — match the org in the build URL to the correct tools (see [references/azdo-helix-reference.md](references/azdo-helix-reference.md#azure-devops-organizations)). If queries return null, check the org before trying other approaches. For complex investigations, track what you've tried in SQL to avoid repeating failed approaches.
 
@@ -103,6 +103,8 @@ Lead with a 1-2 sentence verdict, then the summary table, then detail bullets (o
 
 > ❌ **Don't say "safe to retry" with Build Analysis red.** Map each failing job to a specific known issue first.
 
+> ❌ **Don't execute `gh issue create` without explicit user approval.** Always present the draft command as text and ask the user to confirm before running it. This applies to KBE issues and any other GitHub issue creation.
+
 > ❌ **Don't use raw REST APIs when higher-level tools are available.** Check your available tools for Azure DevOps and Helix operations first. REST API fallback is for when those tools are genuinely unavailable, not a first resort.
 
 ## References
@@ -118,12 +120,13 @@ Lead with a 1-2 sentence verdict, then the summary table, then detail bullets (o
 - **Azure CLI investigation**: [references/azure-cli.md](references/azure-cli.md)
 - **Manual investigation**: [references/manual-investigation.md](references/manual-investigation.md)
 - **SQL tracking**: [references/sql-tracking.md](references/sql-tracking.md)
+- **Known Build Error issue creation**: [references/kbe-issue-creation.md](references/kbe-issue-creation.md)
 - **AzDO/Helix details**: [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
 ## Tips
 
 1. Get repo-specific CI guidance first — it gives you the investigation order, search patterns, and gotchas
 2. Check if same test fails on target branch before assuming transient
-3. Look for `[ActiveIssue]` attributes for known skipped tests
+3. Look for skip/quarantine attributes on known-flaky tests — common ones across dotnet repos include `[ActiveIssue]`, `[SkipOnHelix]`, `[QuarantinedTest]`, and `[ConditionalFact]`/`[ConditionalTheory]` with skip conditions
 4. Search for related issues across dotnet repos when failures don't match known patterns
 5. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results. Helix data may persist even when AzDO builds have expired.

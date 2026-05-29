@@ -13,17 +13,17 @@ Distilled patterns from official docs, Arena empirical data, and real skill-buil
 | `argument-hint` | No | — | ✅ | ✅ | ✅ |
 | `user-invocable` | No | — | ✅ | ✅ | ✅ |
 | `disable-model-invocation` | No | — | ✅ | ✅ | ✅ |
-| `allowed-tools` | No | ✅ᵉˣᵖ | — | — | ✅ |
-| `model` | No | — | — | — | ✅ |
+| `allowed-tools` | No | ✅ᵈ | ✅ᵈ | — | ✅ |
+| `model` | No | — | ✅ᵃ (v1.0.22+) | — | ✅ |
 | `effort` | No | — | — | — | ✅ |
 | `context` | No | — | — | — | ✅ |
 | `agent` | No | — | — | — | ✅ |
 | `hooks` | No | — | — | — | ✅ |
-| `license` | No | ✅ | — | — | — |
+| `license` | No | ✅ | ✅ᵈ | — | — |
 | `compatibility` | No | ✅ | — | — | — |
 | `metadata` | No | ✅ | — | — | — |
 
-Sources: [agentskills.io/specification](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills) (2026-03-24), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-03-18)
+Sources: [agentskills.io/specification](https://agentskills.io/specification), [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code/skills) (2026-03-24), [VS Code docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills) (2026-03-18), [CLI Plugin Reference](https://docs.github.com/en/copilot/reference/cli-plugin-reference) (2026-05-25)
 
 ### Claude Code-only field details
 | Field | Values | Purpose |
@@ -139,7 +139,7 @@ When a workflow has numbered steps (Step 1, Step 2, ...), models treat mid-seque
 | Audience | Primary path | Also works |
 |----------|-------------|-----------|
 | Just you | `~/.copilot/skills/{name}/` | `~/.agents/skills/{name}/` |
-| Your team/repo | `.github/skills/{name}/` | `.agents/skills/{name}/` |
+| Your team/repo | `.github/skills/{name}/` | `.agents/skills/{name}/`, `.claude/skills/{name}/` |
 
 > ⚠️ `~/.copilot/skills/` edits don't auto-sync to repo copies. This is a recurring gap — always sync both when deploying changes.
 
@@ -176,14 +176,15 @@ Periodically re-fetch these for updates. Each has specific things we rely on.
 
 | Source | URL | What we use from it | Last reviewed |
 |--------|-----|---------------------|---------------|
-| GitHub: About Agent Skills | https://docs.github.com/en/copilot/concepts/agents/about-agent-skills | Skill discovery, SKILL.md naming, location paths (`.github/skills/`, `~/.copilot/skills/`) | 2026-02-20 |
-| GitHub: Creating Skills for CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-skills | CLI-specific skill creation, `/skills` command, `/plugin` marketplace | 2026-02-20 |
-| GitHub: Customizing CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/quickstart-for-customizing | Plugins, skills, hooks, agents overview for Copilot CLI | 2026-02-20 |
+| GitHub: About Agent Skills | https://docs.github.com/en/copilot/concepts/agents/about-agent-skills | Skill discovery, SKILL.md naming, location paths (`.github/skills/`, `~/.copilot/skills/`) | 2026-05-18 |
+| GitHub: Creating Skills for CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-skills | CLI-specific skill creation, `/skills` command, `/plugin` marketplace | 2026-05-25 |
+| GitHub: Customizing CLI | https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/quickstart-for-customizing | Plugins, skills, hooks, agents overview for Copilot CLI | 2026-05-25 |
+| GitHub: CLI Plugin Reference | https://docs.github.com/en/copilot/reference/cli-plugin-reference | Full plugin.json schema — `homepage`, `repository`, `tags`, `commands`, `lspServers` fields | 2026-05-25 |
 | VS Code: Agent Skills | https://code.visualstudio.com/docs/copilot/customization/agent-skills | Frontmatter fields (`user-invocable`, `disable-model-invocation`, `argument-hint`), `name` must match directory name, `/create-skill`, `chat.agentSkillsLocations`, `chatSkills` extension API | 2026-03-24 |
-| GitHub: Custom Instructions | https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot | Distinction between skills vs copilot-instructions.md vs .instructions.md | 2026-02-20 |
+| GitHub: Custom Instructions | https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot | Distinction between skills vs copilot-instructions.md vs .instructions.md | 2026-05-18 |
 | agentskills.io | https://agentskills.io | Open standard: name max 64 chars kebab-case, description max 1024 chars, reserved words list | 2026-02-20 |
 | agentskills.io Specification | https://agentskills.io/specification | Formal spec — `allowed-tools`, `license`, `compatibility`, `metadata` fields | 2026-03-24 |
-| agentskills.io (GitHub spec) | https://github.com/agentskills/agentskills | Formal spec repo — canonical field definitions, cross-platform support matrix | 2026-02-20 |
+| agentskills.io (GitHub spec) | https://github.com/agentskills/agentskills | Formal spec repo — canonical field definitions, cross-platform support matrix | 2026-05-18 |
 | Skills, Tools & MCP Guide | https://aka.ms/skills/guidance | Skill classification (utility/workflow/analysis), routing patterns, USE FOR/DO NOT USE FOR, FOR SINGLE OPERATIONS, token budgets (500/5000 — we intentionally diverge to 4K/15K) | 2026-02-20 |
 | Plugin Marketplaces (Claude Code) | https://code.claude.com/docs/en/plugin-marketplaces | Marketplace creation and distribution — copilot-skills uses this model | 2026-02-20 |
 | Plugins Reference (Claude Code) | https://code.claude.com/docs/en/plugins-reference | Full plugin manifest schema (`plugin.json`), MCP server declaration | 2026-02-20 |
