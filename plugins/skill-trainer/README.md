@@ -51,6 +51,10 @@ Guide MCP server design for agent consumption: tool descriptions, naming, knowle
 - [agent-integration-patterns.md](skills/mcp-server-design/references/agent-integration-patterns.md)
 - [industry-alignment.md](skills/mcp-server-design/references/industry-alignment.md)
 - [knowledge-tool-design.md](skills/mcp-server-design/references/knowledge-tool-design.md)
+- [mcp-structured-content.md](skills/mcp-server-design/references/mcp-structured-content.md)
+- [mcp-tool-routing-copy.md](skills/mcp-server-design/references/mcp-tool-routing-copy.md)
+- [mcp-wire-format-trim.md](skills/mcp-server-design/references/mcp-wire-format-trim.md)
+- [server-comparisons.md](skills/mcp-server-design/references/server-comparisons.md)
 - [tool-description-patterns.md](skills/mcp-server-design/references/tool-description-patterns.md)
 - [tool-naming-conventions.md](skills/mcp-server-design/references/tool-naming-conventions.md)
 - [validation-methodology.md](skills/mcp-server-design/references/validation-methodology.md)
@@ -77,10 +81,10 @@ Institutional knowledge for skill training — frontmatter rules, INVOKES patter
 
 ## Agents
 
-### [skill-trainer](agents/skill-trainer.agent.md)
+### [skill-trainer](./agents/skill-trainer.agent.md)
 
 Train and improve Copilot CLI skills through structured eval-driven iteration. USE FOR: improving existing skills, assessing skill quality, creating evals for skills, recording training decisions, opening Arena eval requests. DO NOT USE FOR: creating brand-new skills from scratch (use skill-builder), running Arena evals directly, Squad coordination. INVOKES: skill-builder skill, task tool for multi-model validation, gh CLI for Arena issues.
 
-### [skill-researcher](agents/skill-researcher.agent.md)
+### [skill-researcher](./agents/skill-researcher.agent.md)
 
 Validate existing skills against upstream APIs, docs, and reality. USE FOR: fact-checking skill guidance against live docs, detecting stale API assumptions, auditing routing boundaries between related skills, pre-training research. DO NOT USE FOR: training skills (use SkillTrainer), building new skills from scratch (use skill-builder). INVOKES: web_fetch, GitHub MCP tools, Helix/AzDO/maestro MCP tools as needed.

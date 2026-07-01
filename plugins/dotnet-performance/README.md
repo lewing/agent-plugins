@@ -53,6 +53,6 @@ Analyze WebAssembly binaries from .NET WASM builds using wasm-objdump and relate
 
 ## Agents
 
-### [WasmPerfInvestigator](agents/WasmPerfInvestigator.agent.md)
+### [WasmPerfInvestigator](./agents/WasmPerfInvestigator.agent.md)
 
 Investigate WASM microbenchmark performance regressions reported by the dotnet/performance auto-filer. USE FOR: triaging perf-autofiling-issues, correlating regressions to runtime or infrastructure changes, bisecting runtime pack versions, reproducing regressions in codespaces, differentiating real regressions from measurement artifacts. DO NOT USE FOR: general .NET performance work (use runtime-performance skill), non-WASM regressions, writing benchmarks from scratch.

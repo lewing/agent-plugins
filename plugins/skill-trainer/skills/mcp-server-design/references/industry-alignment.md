@@ -4,14 +4,16 @@ How our MCP design patterns relate to vendor guidance and academic research.
 
 ## Authoritative Sources
 
-### MCP Specification (2025-06-18)
-https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+### MCP Specification (2025-11-25)
+https://modelcontextprotocol.io/specification/2025-11-25/server/tools
 
 Key features for tool design:
 - **Tool annotations:** `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` — hints for clients about tool behavior
 - **`title` field:** Human-friendly display name separate from machine identifier
 - **`outputSchema`:** Optional JSON Schema for structured results — helps clients parse responses
 - **`inputSchema`:** JSON Schema for parameters — use `description` on each property for agent-friendly documentation
+- **`icons` field (added in 2025-11-25):** Optional display icons (`src`, `mimeType`, `sizes`) for client UIs
+- **`execution.taskSupport` (added in 2025-11-25):** Tool opt-in to task-augmented execution (`"forbidden"` (default) / `"optional"` / `"required"`) for long-running operations
 
 ### Anthropic MCP Best Practices
 https://github.com/anthropics/skills/blob/main/skills/mcp-builder/reference/mcp_best_practices.md

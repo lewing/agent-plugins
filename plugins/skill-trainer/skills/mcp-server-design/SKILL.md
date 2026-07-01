@@ -49,7 +49,7 @@ Design MCP tools that agents can discover, select correctly, and use efficiently
 → See `references/knowledge-tool-design.md`
 
 ### Tool Annotations
-From the MCP spec (2025-06-18):
+From the MCP spec (2025-11-25):
 
 | Annotation | Type | Default | Use |
 |-----------|------|---------|-----|
@@ -99,6 +99,10 @@ These patterns are hypotheses supported by evidence, not proven rules. Before ad
 - `references/agent-integration-patterns.md` — domain language, CLI bridges, INVOKES
 - `references/industry-alignment.md` — vendor guidance, research findings
 - `references/validation-methodology.md` — how to test MCP design claims
+- `references/server-comparisons.md` — methodology for evaluating MCP servers + a working catalog of real-world comparisons
+- `references/mcp-wire-format-trim.md` — measuring `tools/list` byte cost and the SDK-default-annotation, `outputSchema`-trim, and candidate-triage patterns for reducing it
+- `references/mcp-structured-content.md` — when to use (and not use) `UseStructuredContent`, wire-compat discipline, error-path migration
+- `references/mcp-tool-routing-copy.md` — discoverability through copy: route callers via descriptions and failure messages instead of growing the tool surface
 
 ## See Also
 

@@ -269,7 +269,7 @@ SELECT local_path, file_type FROM downloaded_artifacts
 WHERE work_item = 'Microsoft.NET.Build.Tests.dll.18';
 ```
 
-Use this whenever you're juggling artifacts from 2+ Helix jobs (especially during the binlog comparison pattern in [binlog-comparison.md](binlog-comparison.md)).
+Use this whenever you're juggling artifacts from 2+ Helix jobs (especially when comparing MSBuild binlogs from a passing run against a failing one to diff task parameters).
 
 ### Tips
 

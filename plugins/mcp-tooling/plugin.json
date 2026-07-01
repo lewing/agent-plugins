@@ -1,0 +1,21 @@
+{
+  "name": "mcp-tooling",
+  "category": "mcp",
+  "version": "0.1.0",
+  "description": "Tools for MCP server authors: context-cost auditing, tool-surface measurement, and reduction-lever guidance",
+  "author": {
+    "name": "lewing"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "audit",
+    "tokens",
+    "context-cost",
+    "tools-list"
+  ],
+  "skills": [
+    "./skills/mcp-context-audit"
+  ]
+}

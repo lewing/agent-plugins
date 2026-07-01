@@ -190,10 +190,12 @@ Present this as additional context: "Commit C was pushed after reviewer X commen
 
 ## Combining with Binlog Comparison
 
-Build progression identifies **which change** correlates with the current failure. Binlog comparison (see [binlog-comparison.md](binlog-comparison.md)) shows **what's different** in the build between a passing and failing state. Together they provide a complete picture:
+Build progression identifies **which change** correlates with the current failure. Binlog comparison — comparing MSBuild binlogs from a passing build against the failing one — shows **what's different** in the build between the two states. Together they provide a complete picture:
 
 1. Progression → "The current failure first appeared in build N+1, which added commit C"
 2. Binlog comparison → "In the current (failing) build, task X receives parameter Y=Z, whereas in the passing build it received Y=W"
+
+> 💡 Delegate binlog download and parameter extraction to subagents — it's mechanical work that burns context if done in the main conversation.
 
 ## Relationship to Target-Branch Comparison
 

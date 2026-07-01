@@ -9,16 +9,16 @@
   "license": "MIT",
   "keywords": null,
   "skills": [
-    "skills/nuget-trusted-publishing",
-    "skills/stealth-squad"
+    "./skills/nuget-trusted-publishing",
+    "./skills/stealth-squad"
   ],
   "mcpServers": {
-    "mcp-binlog-tool": {
+    "binlog-mcp": {
       "command": "dotnet",
       "args": [
         "dnx",
         "--yes",
-        "baronfel.binlog.mcp"
+        "binlogmcp"
       ]
     }
   }

@@ -17,10 +17,10 @@
     "azure-devops"
   ],
   "skills": [
-    "skills/ci-analysis",
-    "skills/flow-analysis",
-    "skills/flow-tracing",
-    "skills/maestro-cli"
+    "./skills/ci-analysis",
+    "./skills/flow-analysis",
+    "./skills/flow-tracing",
+    "./skills/maestro-cli"
   ],
   "mcpServers": {
     "hlx": {

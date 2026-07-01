@@ -14,7 +14,7 @@ When the script output is insufficient (e.g., build timeline fetch fails), use A
 
 1. **Check Build Analysis** — If the Build Analysis GitHub check is **green**, all failures matched known issues and it's safe to retry. If it's **red**, some failures are unaccounted for — you must identify which failing jobs are covered by known issues and which are not. For 3+ failures, use SQL tracking to avoid missed matches (see [sql-tracking.md](sql-tracking.md)).
 2. **Correlate with PR changes** — Same files failing = likely PR-related
-3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare Helix binlogs. See [binlog-comparison.md](binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
+3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare MSBuild binlogs from both runs to find the exact task-parameter difference causing the divergence. **Delegate binlog download and extraction to subagents** to avoid burning context on mechanical work.
 4. **Check build progression** — If the PR has multiple builds (multiple pushes), check whether earlier builds passed. A failure that appeared after a specific push narrows the investigation to those commits. See [build-progression-analysis.md](build-progression-analysis.md). Present findings as facts, not fix recommendations.
 5. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue

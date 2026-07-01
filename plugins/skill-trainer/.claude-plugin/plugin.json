@@ -9,12 +9,12 @@
   "license": "MIT",
   "keywords": null,
   "skills": [
-    "skills/mcp-server-design",
-    "skills/skill-builder",
-    "skills/skill-trainer-knowledge"
+    "./skills/mcp-server-design",
+    "./skills/skill-builder",
+    "./skills/skill-trainer-knowledge"
   ],
   "agents": [
-    "agents/skill-trainer.agent.md",
-    "agents/skill-researcher.agent.md"
+    "./agents/skill-trainer.agent.md",
+    "./agents/skill-researcher.agent.md"
   ]
 }

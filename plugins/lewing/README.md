@@ -59,4 +59,4 @@ Set up a stealth Squad on any repo without modifying tracked files — side-repo
 
 This plugin configures the following [MCP servers](https://modelcontextprotocol.io/) automatically when installed:
 
-- **[mcp-binlog-tool](.claude-plugin/plugin.json#L16-L23)** — `dotnet` tool
+- **[binlog-mcp](.claude-plugin/plugin.json#L16-L23)** — `dotnet` tool

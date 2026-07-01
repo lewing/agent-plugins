@@ -15,9 +15,9 @@
     "target-framework"
   ],
   "skills": [
-    "skills/target-new-framework"
+    "./skills/target-new-framework"
   ],
   "agents": [
-    "agents/framework-versioning.agent.md"
+    "./agents/framework-versioning.agent.md"
   ]
 }

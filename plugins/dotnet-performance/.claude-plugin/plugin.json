@@ -14,10 +14,10 @@
     "profiling"
   ],
   "skills": [
-    "skills/perf-autofiler-triage",
-    "skills/wasm-binary-analysis"
+    "./skills/perf-autofiler-triage",
+    "./skills/wasm-binary-analysis"
   ],
   "agents": [
-    "agents/WasmPerfInvestigator.agent.md"
+    "./agents/WasmPerfInvestigator.agent.md"
   ]
 }
